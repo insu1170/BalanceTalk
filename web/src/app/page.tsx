@@ -1,14 +1,12 @@
 import Link from "next/link";
-
+import CreateRoom from "./create/page";
 // Mock data for rooms, now including participant counts
 const rooms = [
   { id: "1", name: "빠르게 한판", currentParticipants: 5, maxParticipants: 8 },
   { id: "2", name: "풀방 ㄱ", currentParticipants: 8, maxParticipants: 8 },
   { id: "3", name: "심심해", currentParticipants: 2, maxParticipants: 8 },
   { id: "4", name: "심심해", currentParticipants: 2, maxParticipants: 8 },
-  { id: "5", name: "심심해", currentParticipants: 2, maxParticipants: 8 },
-  { id: "32", name: "심심해", currentParticipants: 2, maxParticipants: 8 },
-  { id: "33", name: "심심해", currentParticipants: 2, maxParticipants: 8 },
+
 ];
 
 export default function Home() {
@@ -52,8 +50,9 @@ export default function Home() {
               총 {rooms.length}개
             </span>
           </div>
-
+          <CreateRoom className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50"></CreateRoom>
           <ul className="space-y-4">
+
             {rooms.map((room) => {
               const isFull = room.currentParticipants >= room.maxParticipants;
               return (
@@ -71,11 +70,10 @@ export default function Home() {
                       {/* Right: status and participants */}
                       <div className="flex items-center gap-3 text-sm">
                         <span
-                          className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                            isFull
-                              ? "bg-red-100 text-red-700 border border-red-200"
-                              : "bg-green-100 text-green-800 border border-green-200"
-                          }`}
+                          className={`rounded-full px-3 py-1 text-xs font-semibold ${isFull
+                            ? "bg-red-100 text-red-700 border border-red-200"
+                            : "bg-green-100 text-green-800 border border-green-200"
+                            }`}
                         >
                           {isFull ? "참여불가" : "참여가능"}
                         </span>
