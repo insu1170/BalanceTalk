@@ -5,41 +5,39 @@ const rooms = [
   { id: "1", name: "빠르게 한판", currentParticipants: 5, maxParticipants: 8 },
   { id: "2", name: "풀방 ㄱ", currentParticipants: 8, maxParticipants: 8 },
   { id: "3", name: "심심해", currentParticipants: 2, maxParticipants: 8 },
+  { id: "4", name: "심심해", currentParticipants: 2, maxParticipants: 8 },
+  { id: "5", name: "심심해", currentParticipants: 2, maxParticipants: 8 },
+  { id: "32", name: "심심해", currentParticipants: 2, maxParticipants: 8 },
+  { id: "33", name: "심심해", currentParticipants: 2, maxParticipants: 8 },
 ];
 
 export default function Home() {
   return (
-    <div className="mx-auto w-full max-w-2xl p-4 sm:p-6 font-sans">
-      {/* Header */}
-      <header className="my-6 sm:my-10 space-y-2 text-center">
-        <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-gray-800">BalanceTalk</h1>
-        <p className="text-gray-500 text-sm sm:text-base">즉흥적인 밸런스 토론 한 판, 지금 바로 들어가요</p>
-      </header>
-
-      <main className="flex flex-col gap-6 sm:gap-8">
+    <div className="mx-auto w-full max-w-3xl px-4 sm:px-6 py-8 font-sans">
+      <main className="flex flex-col gap-8">
         {/* Actions */}
-        <section className="rounded-2xl border bg-white p-4 sm:p-5 shadow-sm">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <section className="bg-gray-50 border border-gray-200 rounded-2xl p-5 shadow-sm">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             {/* Join by code */}
-            <div className="flex w-full sm:w-auto items-center gap-2">
+            <div className="flex w-full sm:w-auto items-center gap-3">
               <input
                 type="text"
-                placeholder="방 코드 입력"
-                className="w-full sm:w-56 rounded-lg border border-gray-300 px-3 py-2 text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="방 코드를 입력하세요"
+                className="w-full sm:w-60 rounded-xl border-gray-300 px-4 py-2.5 text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow"
               />
-              <button className="whitespace-nowrap rounded-lg bg-gray-800 px-4 py-2 text-white font-semibold hover:bg-gray-900 transition-colors">
-                입장
+              <button className="whitespace-nowrap rounded-xl bg-gray-800 px-5 py-2.5 text-white font-bold hover:bg-gray-900 transition-all duration-200 ease-in-out transform hover:scale-105 cursor-pointer">
+                참여
               </button>
             </div>
 
-            {/* Divider on mobile */}
-            <div className="sm:hidden h-px bg-gray-200" />
+            {/* Divider */}
+            <div className="hidden sm:block h-8 border-l border-gray-200" />
 
             {/* Create room */}
-            <div className="flex justify-end">
+            <div className="flex">
               <Link href="/create" className="w-full sm:w-auto">
-                <button className="w-full rounded-lg bg-blue-500 px-5 py-2 text-white font-semibold shadow-sm hover:bg-blue-600 transition-colors">
-                  방 만들기
+                <button className="w-full rounded-xl bg-indigo-600 px-6 py-2.5 text-white font-bold shadow-lg hover:bg-indigo-700 transition-all duration-200 ease-in-out transform hover:scale-105 cursor-pointer">
+                  새 토론방 만들기
                 </button>
               </Link>
             </div>
@@ -47,36 +45,45 @@ export default function Home() {
         </section>
 
         {/* Room list */}
-        <section className="rounded-2xl border bg-white p-4 sm:p-5 shadow-sm">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-800">토론 방 목록</h2>
-            <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600">총 {rooms.length}개</span>
+        <section className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm min-h-[500px] h-[60vh] overflow-auto">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-xl font-bold text-gray-800">현재 활성화된 토론방</h2>
+            <span className="rounded-full bg-gray-100 px-3.5 py-1.5 text-sm font-medium text-gray-700">
+              총 {rooms.length}개
+            </span>
           </div>
 
-          <ul className="space-y-3">
+          <ul className="space-y-4">
             {rooms.map((room) => {
               const isFull = room.currentParticipants >= room.maxParticipants;
               return (
                 <li key={room.id}>
-                  <Link href={`/room/${room.id}`} className="block">
-                    <div className="group flex items-center justify-between rounded-xl border px-4 py-3 bg-white hover:bg-gray-50 transition-colors">
-                      {/* Left: name */}
+                  <Link href={`/room/${room.id}`} className="block group">
+                    <div className="flex items-center justify-between rounded-xl border border-gray-200 p-4 bg-white hover:bg-gray-50 hover:shadow-md transition-all duration-200 ease-in-out">
+                      {/* Left: name and ID */}
                       <div className="min-w-0">
-                        <h3 className="truncate text-base sm:text-lg font-semibold text-gray-900 group-hover:text-gray-800">
+                        <h3 className="truncate text-lg font-semibold text-gray-900 group-hover:text-indigo-600">
                           {room.name}
                         </h3>
-                        <p className="mt-0.5 text-xs text-gray-500">ID: {room.id}</p>
+                        <p className="mt-1 text-sm text-gray-500">ID: {room.id}</p>
                       </div>
 
-                      {/* Right: status */}
-                      <div className="flex items-center gap-2 text-sm">
-                        <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                          isFull ? "bg-red-50 text-red-600 border border-red-200" : "bg-green-50 text-green-700 border border-green-200"
-                        }`}>
-                          {isFull ? "풀방" : "입장 가능"}
+                      {/* Right: status and participants */}
+                      <div className="flex items-center gap-3 text-sm">
+                        <span
+                          className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                            isFull
+                              ? "bg-red-100 text-red-700 border border-red-200"
+                              : "bg-green-100 text-green-800 border border-green-200"
+                          }`}
+                        >
+                          {isFull ? "참여불가" : "참여가능"}
                         </span>
-                        <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700">
-                          👤 {room.currentParticipants} / {room.maxParticipants}
+                        <span className="flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0010 9c-1.55 0-2.98.5-4.07 1.33A6.97 6.97 0 004 16c0 .34.024.673.07 1h8.86zM12 18a5 5 0 005-5c0-2.76-2.24-5-5-5s-5 2.24-5 5c0 2.76 2.24 5 5 5z" />
+                          </svg>
+                          {room.currentParticipants} / {room.maxParticipants}
                         </span>
                       </div>
                     </div>

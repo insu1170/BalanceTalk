@@ -20,8 +20,8 @@ export default function RootLayout({
             ⚖️ 밸런스 토론
           </Link>
           <div className="flex gap-4 text-sm font-medium">
-            <Link href="/create" className="hover:text-blue-600 transition-colors">
-              방 만들기
+            <Link href="/login" className="hover:text-blue-600 transition-colors">
+              로그인
             </Link>
             <Link href="/about" className="hover:text-blue-600 transition-colors">
               소개
