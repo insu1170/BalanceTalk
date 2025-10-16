@@ -1,5 +1,8 @@
+"use client";
 import Link from "next/link";
-import CreateRoom from "./create/page";
+import CreateRoom from "./components/CreateRoom";
+import { useState } from "react";
+
 // Mock data for rooms, now including participant counts
 const rooms = [
   { id: "1", name: "빠르게 한판", currentParticipants: 5, maxParticipants: 8 },
@@ -10,6 +13,7 @@ const rooms = [
 ];
 
 export default function Home() {
+  const [modalState, setModalState] = useState(false);
   return (
     <div className="mx-auto w-full max-w-3xl px-4 sm:px-6 py-8 font-sans">
       <main className="flex flex-col gap-8">
@@ -33,11 +37,9 @@ export default function Home() {
 
             {/* Create room */}
             <div className="flex">
-              <Link href="/create" className="w-full sm:w-auto">
-                <button className="w-full rounded-xl bg-indigo-600 px-6 py-2.5 text-white font-bold shadow-lg hover:bg-indigo-700 transition-all duration-200 ease-in-out transform hover:scale-105 cursor-pointer">
-                  새 토론방 만들기
-                </button>
-              </Link>
+              <button className="w-full rounded-xl bg-indigo-600 px-6 py-2.5 text-white font-bold shadow-lg hover:bg-indigo-700 transition-all duration-200 ease-in-out transform hover:scale-105 cursor-pointer" onClick={()=>setModalState(true)} >
+                새 토론방 만들기
+              </button>
             </div>
           </div>
         </section>
@@ -50,7 +52,9 @@ export default function Home() {
               총 {rooms.length}개
             </span>
           </div>
-          <CreateRoom className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50"></CreateRoom>
+
+          {modalState? <CreateRoom className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50" />:''}
+          
           <ul className="space-y-4">
 
             {rooms.map((room) => {
@@ -71,8 +75,8 @@ export default function Home() {
                       <div className="flex items-center gap-3 text-sm">
                         <span
                           className={`rounded-full px-3 py-1 text-xs font-semibold ${isFull
-                            ? "bg-red-100 text-red-700 border border-red-200"
-                            : "bg-green-100 text-green-800 border border-green-200"
+                              ? "bg-red-100 text-red-700 border border-red-200"
+                              : "bg-green-100 text-green-800 border border-green-200"
                             }`}
                         >
                           {isFull ? "참여불가" : "참여가능"}
