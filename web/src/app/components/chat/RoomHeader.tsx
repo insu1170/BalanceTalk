@@ -26,6 +26,10 @@ export default function RoomHeader({ roomId, title = "밸런스 토론방", part
                     </div>
                     <div className="text-xs text-gray-500 truncate">Room ID: {roomId}{typeof participants === "number" ? ` · 참가자 ${participants}명` : ""}</div>
                 </div>
+                <button
+                    className="bg-red-500 hover:bg-red-600 text-white font-semibold px-5 py-2 rounded-xl transition-colors duration-200 cursor-pointer">
+                    토론 시작
+                </button>
             </div>
         </header>
     );
