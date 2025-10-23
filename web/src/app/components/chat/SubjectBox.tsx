@@ -1,19 +1,29 @@
 "use client";
 import React, { useState } from "react";
 
+type SubjectBoxProps = {
+    text: string;
+    state: boolean;
+    onClose?: () => void;
+};
 
-export default function SubjectBox({ text }: { text: string }) {
-    const [open, setOpen] = useState(true);
-    if (!open) return null;
+export default function SubjectBox({ text, state, onClose }: SubjectBoxProps) {
+    if (!state) return null;
+
     return (
         <div className="sticky top-12 z-10 w-full border-b bg-amber-50/90 backdrop-blur supports-[backdrop-filter]:bg-amber-50/70">
             <div className="mx-auto max-w-4xl px-4 py-2 flex items-center gap-2 text-amber-900">
                 <span className="text-sm">📢</span>
-                <p className="flex-1 text-sm truncate"><strong className="mr-1">주제:</strong><b>{text}</b></p>
+                <p className="flex-1 text-sm truncate">
+                    <strong className="mr-1">주제:</strong>
+                    <b>{text}</b>
+                </p>
                 <button
-                    onClick={() => setOpen(false)}
+                    onClick={onClose}
                     className="text-xs rounded-md px-2 py-1 border hover:bg-amber-100"
-                >닫기</button>
+                >
+                    닫기
+                </button>
             </div>
         </div>
     );
