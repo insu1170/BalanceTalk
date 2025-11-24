@@ -1,31 +1,21 @@
 import express from "express";
 import http from "http";
-import { Server } from "socket.io";
 import cors from "cors";
 import dotenv from "dotenv";
+import webSocket from "./socket";
 
-dotenv.config();
+dotenv.config(); // .env 파일 로드
 
 const app = express();
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: { origin: process.env.CORS_ORIGIN || "http://localhost:3000" },
-});
-
 app.use(cors());
-app.get("/", (_, res) => res.send("BalanceTalk API Running 🚀"));
 
-io.on("connection", (socket) => {
-  console.log("🟢 User connected:", socket.id);
+// HTTP 서버 생성
+const server = http.createServer(app);
 
-  socket.on("message", (msg) => {
-    io.emit("message", msg);
-  });
+// Socket.io 연결
+webSocket(server); // socket.ts에 정의된 함수 실행
 
-  socket.on("disconnect", () => {
-    console.log("🔴 User disconnected:", socket.id);
-  });
+// 서버 시작
+server.listen(4000, () => {
+  console.log("✅ Server listening on port 4000");
 });
-
-const PORT = process.env.PORT || 8080;
-server.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));

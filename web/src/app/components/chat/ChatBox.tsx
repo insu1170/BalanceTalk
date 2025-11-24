@@ -1,5 +1,6 @@
 "use client";
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { io } from "socket.io-client";
 
 
 export type ChatBoxProps = {
