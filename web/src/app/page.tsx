@@ -1,19 +1,83 @@
 "use client";
 import Link from "next/link";
 import CreateRoom from "./components/CreateRoom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-// Mock data for rooms, now including participant counts
-const rooms = [
-  { id: "1", name: "빠르게 한판", currentParticipants: 5, maxParticipants: 8 },
-  { id: "2", name: "풀방 ㄱ", currentParticipants: 8, maxParticipants: 8 },
-  { id: "3", name: "심심해", currentParticipants: 2, maxParticipants: 8 },
-  { id: "4", name: "심심해", currentParticipants: 2, maxParticipants: 8 },
+// 서버에서 오는 원본 타입
+type RawRoom = {
+  id: string;
+  title: string;
+  participants: number; // capacity (정원)이라고 가정
+};
 
-];
+// UI에서 쓰는 타입
+type Room = {
+  id: string;
+  name: string;
+  currentParticipants: number;
+  maxParticipants: number;
+};
 
 export default function Home() {
   const [modalState, setModalState] = useState(false);
+  const [rooms, setRooms] = useState<Room[]>([]);
+
+  // 🔹 서버에서 방 목록 가져오기
+  useEffect(() => {
+    const fetchRooms = async () => {
+      try {
+        const res = await fetch("http://localhost:4000/api/rooms");
+        const data: RawRoom[] = await res.json();
+
+        // RawRoom → Room 으로 매핑
+        const mapped: Room[] = data.map((room) => ({
+          id: room.id,
+          name: room.title,
+          // 아직은 입장 인원수 로직 없으니까 1명(방장)이라고 가정
+          currentParticipants: 1,
+          maxParticipants: room.participants,
+        }));
+
+        setRooms(mapped);
+      } catch (e) {
+        console.error("방 목록 불러오기 실패:", e);
+      }
+    };
+
+    fetchRooms();
+  }, []);
+
+  // 🔹 방 생성
+  const handleCreateRoom = async (data: { title: string; participants: number }) => {
+    console.log("방 생성 요청:", data);
+
+    // ⚠️ 여기 공백 하나 들어가 있던 거 지워야 함!
+    const res = await fetch("http://localhost:4000/api/rooms", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+
+    if (!res.ok) {
+      console.error("방 생성 실패");
+      return;
+    }
+
+    const result = await res.json();
+    const created: RawRoom = result.room;
+
+    // 새 방을 현재 리스트에 추가
+    const newRoom: Room = {
+      id: created.id,
+      name: created.title,
+      currentParticipants: 1,
+      maxParticipants: created.participants,
+    };
+
+    setRooms((prev) => [newRoom, ...prev]);
+    setModalState(false);
+  };
+
   return (
     <div className="mx-auto w-full max-w-3xl px-4 sm:px-6 py-8 font-sans">
       <main className="flex flex-col gap-8">
@@ -31,13 +95,14 @@ export default function Home() {
                 참여
               </button>
             </div>
-
-            {/* Divider */}
             <div className="hidden sm:block h-8 border-l border-gray-200" />
 
             {/* Create room */}
             <div className="flex">
-              <button className="w-full rounded-xl bg-indigo-600 px-6 py-2.5 text-white font-bold shadow-lg hover:bg-indigo-700 transition-all duration-200 ease-in-out transform hover:scale-105 cursor-pointer" onClick={() => setModalState(true)} >
+              <button
+                className="w-full rounded-xl bg-indigo-600 px-6 py-2.5 text-white font-bold shadow-lg hover:bg-indigo-700 transition-all duration-200 ease-in-out transform hover:scale-105 cursor-pointer"
+                onClick={() => setModalState(true)}
+              >
                 새 토론방 만들기
               </button>
             </div>
@@ -48,6 +113,7 @@ export default function Home() {
         {modalState && (
           <CreateRoom
             onClose={() => setModalState(false)}
+            onSubmit={handleCreateRoom}
             className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50"
           />
         )}
@@ -67,7 +133,6 @@ export default function Home() {
                 <li key={room.id}>
                   <Link href={`/room/${room.id}`} className="block group">
                     <div className="flex items-center justify-between rounded-xl border border-gray-200 p-4 bg-white hover:bg-gray-50 hover:shadow-md transition-all duration-200 ease-in-out">
-                      {/* Left: name and ID */}
                       <div className="min-w-0">
                         <h3 className="truncate text-lg font-semibold text-gray-900 group-hover:text-indigo-600">
                           {room.name}
@@ -75,20 +140,17 @@ export default function Home() {
                         <p className="mt-1 text-sm text-gray-500">ID: {room.id}</p>
                       </div>
 
-                      {/* Right: status and participants */}
                       <div className="flex items-center gap-3 text-sm">
                         <span
-                          className={`rounded-full px-3 py-1 text-xs font-semibold ${isFull
-                            ? "bg-red-100 text-red-700 border border-red-200"
-                            : "bg-green-100 text-green-800 border border-green-200"
-                            }`}
+                          className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                            isFull
+                              ? "bg-red-100 text-red-700 border border-red-200"
+                              : "bg-green-100 text-green-800 border border-green-200"
+                          }`}
                         >
                           {isFull ? "참여불가" : "참여가능"}
                         </span>
                         <span className="flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
-                            <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0010 9c-1.55 0-2.98.5-4.07 1.33A6.97 6.97 0 004 16c0 .34.024.673.07 1h8.86zM12 18a5 5 0 005-5c0-2.76-2.24-5-5-5s-5 2.24-5 5c0 2.76 2.24 5 5 5z" />
-                          </svg>
                           {room.currentParticipants} / {room.maxParticipants}
                         </span>
                       </div>
