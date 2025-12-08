@@ -2,6 +2,7 @@
 import Link from "next/link";
 import CreateRoom from "./components/CreateRoom";
 import { useEffect, useState } from "react";
+// import Login from "./components/Login"
 
 // 서버에서 오는 원본 타입
 type RawRoom = {
@@ -21,6 +22,7 @@ type Room = {
 export default function Home() {
   const [modalState, setModalState] = useState(false);
   const [rooms, setRooms] = useState<Room[]>([]);
+ 
 
   // 🔹 서버에서 방 목록 가져오기
   useEffect(() => {
@@ -118,6 +120,7 @@ export default function Home() {
           />
         )}
 
+ 
         {/* Room list */}
         <section className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm min-h-[500px] h-[60vh] overflow-auto">
           <div className="mb-4 flex items-center justify-between">
