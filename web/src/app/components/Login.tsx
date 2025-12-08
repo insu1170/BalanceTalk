@@ -10,13 +10,19 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-export default function CardDemo() {
+
+
+type props={
+    className?: string;
+}
+export default function CardDemo({
+    className = "",}:props) {
   return (
-    <Card className="w-full max-w-sm">
+    <Card className={`w-full max-w-sm ${className}`}>
       <CardHeader>
-        <CardTitle>Login to your account</CardTitle>
+        <CardTitle>Login</CardTitle>
         <CardDescription>
-          Enter your email below to login to your account
+          이메일을 입력하세요.
         </CardDescription>
         <CardAction>
           <Button variant="link">Sign Up</Button>
@@ -30,7 +36,7 @@ export default function CardDemo() {
               <Input
                 id="email"
                 type="email"
-                placeholder="m@example.com"
+                placeholder="yourId@domain.com"
                 required
               />
             </div>

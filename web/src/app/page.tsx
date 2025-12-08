@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import CreateRoom from "./components/CreateRoom";
+import Login from "./components/Login"
 import { useEffect, useState } from "react";
 // import Login from "./components/Login"
 
@@ -22,7 +23,7 @@ type Room = {
 export default function Home() {
   const [modalState, setModalState] = useState(false);
   const [rooms, setRooms] = useState<Room[]>([]);
- 
+ const [loginState,setLoginState] = useState(false)
 
   // 🔹 서버에서 방 목록 가져오기
   useEffect(() => {
@@ -93,7 +94,7 @@ export default function Home() {
                 placeholder="방 코드를 입력하세요"
                 className="w-full sm:w-60 rounded-xl border-gray-300 px-4 py-2.5 text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow"
               />
-              <button className="whitespace-nowrap rounded-xl bg-gray-800 px-5 py-2.5 text-white font-bold hover:bg-gray-900 transition-all duration-200 ease-in-out transform hover:scale-105 cursor-pointer">
+              <button onClick={()=>setLoginState(true)} className="whitespace-nowrap rounded-xl bg-gray-800 px-5 py-2.5 text-white font-bold hover:bg-gray-900 transition-all duration-200 ease-in-out transform hover:scale-105 cursor-pointer">
                 참여
               </button>
             </div>
@@ -118,6 +119,9 @@ export default function Home() {
             onSubmit={handleCreateRoom}
             className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50"
           />
+        )}
+        {loginState&&(
+          <Login className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50"></Login>
         )}
 
  
