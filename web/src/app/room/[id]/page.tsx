@@ -1,11 +1,18 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useContext,
+} from "react";
 import RoomHeader from "@/app/components/chat/RoomHeader";
 import MessageList, { Message } from "@/app/components/chat/MessageList";
 import ChatBox from "@/app/components/chat/ChatBox";
 import SubjectBox from "@/app/components/chat/SubjectBox";
 import { io, Socket } from "socket.io-client";
+import { UserContext } from "@/app/components/appShell"; // 파일 경로는 실제 구조에 맞게
 
 interface ServerMessagePayload {
   id: string;
@@ -19,14 +26,14 @@ interface ServerMessagePayload {
 export default function ChatRoomPage({ params }: { params: { id: string } }) {
   const roomId = params.id;
 
-  // 내 정보 (랜덤 유저 ID)
-  const [me] = useState(() => {
-    const randomId = Math.floor(Math.random() * 10000);
-    return {
-      id: `user-${randomId}`,
-      name: `사용자 ${randomId}`,
-    };
-  });
+  // 🔹 전역 유저 정보 (AppShell에서 제공)
+  const user = useContext(UserContext);
+  if (!user) {
+    // 아직 AppShell에서 user를 못 만들었을 때 (첫 렌더)
+    return null; // 필요하면 로딩 UI로 바꿔도 됨
+  }
+
+  const { userId, name } = user;
 
   const [socket, setSocket] = useState<Socket | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -50,7 +57,9 @@ export default function ChatRoomPage({ params }: { params: { id: string } }) {
     // 1) HTTP로 이전 채팅 로그 불러오기
     const fetchMessages = async () => {
       try {
-        const res = await fetch(`http://localhost:4000/api/rooms/${roomId}/messages`);
+        const res = await fetch(
+          `http://localhost:4000/api/rooms/${roomId}/messages`
+        );
         const data: ServerMessagePayload[] = await res.json();
 
         const mapped: Message[] = data.map((m) => ({
@@ -73,10 +82,13 @@ export default function ChatRoomPage({ params }: { params: { id: string } }) {
     fetchMessages();
 
     // 2) 소켓 연결
-    const s = io(process.env.NEXT_PUBLIC_SOCKET_URL ?? "http://localhost:4000", {
-      path: "/socket.io",
-      transports: ["websocket"],
-    });
+    const s = io(
+      process.env.NEXT_PUBLIC_SOCKET_URL ?? "http://localhost:4000",
+      {
+        path: "/socket.io",
+        transports: ["websocket"],
+      }
+    );
 
     setSocket(s);
 
@@ -87,8 +99,8 @@ export default function ChatRoomPage({ params }: { params: { id: string } }) {
 
     // 서버에서 브로드캐스트된 메시지 수신
     s.on("receive_message", (msg: ServerMessagePayload) => {
-      // 내가 보낸 메시지면 이미 로컬에 추가했으니 스킵 (선택)
-      if (msg.userId && msg.userId === me.id) return;
+      // 내가 보낸 메시지면 이미 로컬에 추가했으니 스킵
+      if (msg.userId && msg.userId === userId) return;
 
       setMessages((prev) => [
         ...prev,
@@ -109,7 +121,7 @@ export default function ChatRoomPage({ params }: { params: { id: string } }) {
       s.emit("leave_room", roomId);
       s.disconnect();
     };
-  }, [roomId, me.id]);
+  }, [roomId, userId]);
 
   // 🔹 메시지 전송 핸들러 (ChatBox → 여기로)
   const handleSend = useCallback(
@@ -117,14 +129,17 @@ export default function ChatRoomPage({ params }: { params: { id: string } }) {
       if (!socket) return;
 
       // 1) 서버에 먼저 저장 (logs/{roomId}.json)
-      const res = await fetch(`http://localhost:4000/api/rooms/${roomId}/messages`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          user: me.name,
-          text,
-        }),
-      });
+      const res = await fetch(
+        `http://localhost:4000/api/rooms/${roomId}/messages`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            user: name,
+            text,
+          }),
+        }
+      );
 
       if (!res.ok) {
         console.error("메시지 저장 실패");
@@ -136,8 +151,8 @@ export default function ChatRoomPage({ params }: { params: { id: string } }) {
 
       const mapped: Message = {
         id: saved.id,
-        userId: saved.userId ?? me.id,
-        name: saved.name ?? saved.user ?? me.name,
+        userId: saved.userId ?? userId,
+        name: saved.name ?? saved.user ?? name,
         text: saved.text,
         createdAt:
           typeof saved.createdAt === "string"
@@ -156,16 +171,32 @@ export default function ChatRoomPage({ params }: { params: { id: string } }) {
         name: mapped.name,
       });
     },
-    [socket, roomId, me.id, me.name]
+    [socket, roomId, userId, name]
   );
 
-  const headerTitle = useMemo(() => `밸런스 토론방 · #${roomId}`, [roomId]);
+  const headerTitle = useMemo(
+    () => `밸런스 토론방 · #${roomId}`,
+    [roomId]
+  );
 
   return (
     <div className="flex h-[80vh] flex-col bg-white">
-      <RoomHeader roomId={roomId} title={headerTitle} participants={3} onStart={randomTopic} />
-      <SubjectBox text={topic} state={open} onClose={() => setOpen(false)} />
-      <MessageList meId={me.id} messages={messages} className="flex-1 overflow-y-auto px-4 py-4" />
+      <RoomHeader
+        roomId={roomId}
+        title={headerTitle}
+        participants={3}
+        onStart={randomTopic}
+      />
+      <SubjectBox
+        text={topic}
+        state={open}
+        onClose={() => setOpen(false)}
+      />
+      <MessageList
+        meId={userId}
+        messages={messages}
+        className="flex-1 overflow-y-auto px-4 py-4"
+      />
       <ChatBox onSend={handleSend} />
     </div>
   );
