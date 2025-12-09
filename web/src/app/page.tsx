@@ -3,6 +3,11 @@ import Link from "next/link";
 import CreateRoom from "./components/CreateRoom";
 import Login from "./components/Login"
 import { useEffect, useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+} from "@/components/ui/dialog"
+
 // import Login from "./components/Login"
 
 // 서버에서 오는 원본 타입
@@ -23,7 +28,7 @@ type Room = {
 export default function Home() {
   const [modalState, setModalState] = useState(false);
   const [rooms, setRooms] = useState<Room[]>([]);
- const [loginState,setLoginState] = useState(false)
+  const [loginState, setLoginState] = useState(false)
 
   // 🔹 서버에서 방 목록 가져오기
   useEffect(() => {
@@ -94,7 +99,7 @@ export default function Home() {
                 placeholder="방 코드를 입력하세요"
                 className="w-full sm:w-60 rounded-xl border-gray-300 px-4 py-2.5 text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow"
               />
-              <button onClick={()=>setLoginState(true)} className="whitespace-nowrap rounded-xl bg-gray-800 px-5 py-2.5 text-white font-bold hover:bg-gray-900 transition-all duration-200 ease-in-out transform hover:scale-105 cursor-pointer">
+              <button onClick={() => setLoginState(true)} className="whitespace-nowrap rounded-xl bg-gray-800 px-5 py-2.5 text-white font-bold hover:bg-gray-900 transition-all duration-200 ease-in-out transform hover:scale-105 cursor-pointer">
                 참여
               </button>
             </div>
@@ -114,17 +119,27 @@ export default function Home() {
 
         {/* Create room Modal */}
         {modalState && (
-          <CreateRoom
-            onClose={() => setModalState(false)}
-            onSubmit={handleCreateRoom}
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50"
-          />
+          <Dialog open={modalState}>
+            <DialogContent>
+              <CreateRoom
+                onClose={() => setModalState(false)}
+                onSubmit={handleCreateRoom}
+                className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50"
+              />
+            </DialogContent>
+          </Dialog>
         )}
-        {loginState&&(
-          <Login className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50"></Login>
+        {loginState && (
+          <Dialog open={loginState}>
+            <DialogContent>
+              <Login className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50"
+                onClose={() => setLoginState(false)}
+              />
+            </DialogContent>
+          </Dialog>
         )}
 
- 
+
         {/* Room list */}
         <section className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm min-h-[500px] h-[60vh] overflow-auto">
           <div className="mb-4 flex items-center justify-between">
@@ -149,11 +164,10 @@ export default function Home() {
 
                       <div className="flex items-center gap-3 text-sm">
                         <span
-                          className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                            isFull
-                              ? "bg-red-100 text-red-700 border border-red-200"
-                              : "bg-green-100 text-green-800 border border-green-200"
-                          }`}
+                          className={`rounded-full px-3 py-1 text-xs font-semibold ${isFull
+                            ? "bg-red-100 text-red-700 border border-red-200"
+                            : "bg-green-100 text-green-800 border border-green-200"
+                            }`}
                         >
                           {isFull ? "참여불가" : "참여가능"}
                         </span>
