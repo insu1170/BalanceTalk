@@ -136,6 +136,7 @@ export default function ChatRoomPage({ params }: { params: { id: string } }) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             user: name,
+            userId, // 👈 userId 전송 추가
             text,
           }),
         }

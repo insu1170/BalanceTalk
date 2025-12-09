@@ -76,7 +76,7 @@ app.get("/api/rooms", (req, res) => {
 // -----------------------------
 app.post("/api/rooms/:id/messages", (req, res) => {
   const roomId = req.params.id;
-  const { user = "익명", text } = req.body;
+  const { user = "익명", text, userId } = req.body;
 
   if (!text) {
     return res.status(400).json({ message: "text는 필수입니다." });
@@ -99,6 +99,7 @@ app.post("/api/rooms/:id/messages", (req, res) => {
   const newMessage = {
     id: Date.now().toString(),
     user,
+    userId, // 👈 userId 저장 추가
     text,
     createdAt: new Date().toISOString(),
   };
