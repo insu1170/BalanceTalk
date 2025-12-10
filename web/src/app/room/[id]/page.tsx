@@ -39,6 +39,7 @@ export default function ChatRoomPage({ params }: { params: { id: string } }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [open, setOpen] = useState(false);
   const [topic, setTopic] = useState("주제 미정");
+  const [selectedSide, setSelectedSide] = useState<'A' | 'B' | null>(null); // 👈 진영 선택 상태 추가
 
   const TOPIC: Record<string, string> = {
     "1": "따뜻해진 냉면 vs 식어버린 라면",
@@ -47,9 +48,16 @@ export default function ChatRoomPage({ params }: { params: { id: string } }) {
   };
 
   const randomTopic = () => {
+    console.log("🔘 토론 시작 버튼 클릭됨");
     const topicId = Math.floor(Math.random() * 3) + 1;
-    setOpen(true);
-    setTopic(TOPIC[String(topicId)]);
+    const newTopic = TOPIC[String(topicId)];
+
+    if (socket) {
+      console.log(`📤 start_debate 이벤트 전송: ${newTopic}`);
+      socket.emit("start_debate", { roomId, topic: newTopic });
+    } else {
+      console.error("❌ 소켓이 연결되지 않음");
+    }
   };
 
   // 🔹 초기 로딩 + 소켓 연결
@@ -115,6 +123,14 @@ export default function ChatRoomPage({ params }: { params: { id: string } }) {
               : msg.createdAt,
         },
       ]);
+    });
+
+    // 토론 시작 이벤트 수신
+    s.on("start_debate", (data: { topic: string }) => {
+      console.log(`📥 start_debate 이벤트 수신: ${data.topic}`);
+      setTopic(data.topic);
+      setOpen(true);
+      setSelectedSide(null); // 새로운 토론 시작 시 선택 초기화
     });
 
     return () => {
@@ -192,6 +208,11 @@ export default function ChatRoomPage({ params }: { params: { id: string } }) {
         text={topic}
         state={open}
         onClose={() => setOpen(false)}
+        onSelectSide={(side) => {
+          setSelectedSide(side);
+          console.log(`진영 선택: ${side}`);
+          // TODO: 서버에 진영 선택 정보 전송
+        }}
       />
       <MessageList
         meId={userId}
