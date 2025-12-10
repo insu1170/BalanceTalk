@@ -14,12 +14,14 @@ export default function SubjectBox({
     onSelectSide,
     endTime,
     userCounts = { A: 0, B: 0 },
-    mySelection
+    mySelection,
+    phase
 }: SubjectBoxProps & {
     onSelectSide?: (side: 'A' | 'B') => void;
     endTime?: number;
     userCounts?: { A: number; B: number };
     mySelection?: 'A' | 'B' | null;
+    phase?: 'selecting' | 'debating' | 'final_selecting' | 'waiting';
 }) {
     const [timeLeft, setTimeLeft] = useState(10);
 
@@ -30,6 +32,7 @@ export default function SubjectBox({
         const interval = setInterval(() => {
             const now = Date.now();
             const diff = Math.ceil((endTime - now) / 1000);
+            // console.log(`Timer Tick: endTime=${endTime}, now=${now}, diff=${diff}`);
             if (diff <= 0) {
                 setTimeLeft(0);
                 clearInterval(interval);
@@ -47,6 +50,8 @@ export default function SubjectBox({
     const sideA = sides[0] || "A";
     const sideB = sides[1] || "B";
 
+    const title = phase === 'final_selecting' ? "최종 선택:" : "진영 선택:";
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm transition-all duration-300 animate-in fade-in">
             <div className="w-full max-w-lg mx-4 bg-white rounded-2xl shadow-2xl overflow-hidden transform transition-all scale-100">
@@ -54,9 +59,9 @@ export default function SubjectBox({
                     {/* Header Row */}
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 overflow-hidden">
-                            <span className="text-xl">📢</span>
+                            <span className="text-xl">�</span>
                             <p className="text-lg truncate">
-                                <strong className="mr-2 opacity-70">진영 선택:</strong>
+                                <strong className="mr-2 opacity-70">{title}</strong>
                                 <span className="font-bold text-amber-950">{text}</span>
                             </p>
                         </div>

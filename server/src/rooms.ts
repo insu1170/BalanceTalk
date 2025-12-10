@@ -7,10 +7,11 @@ export interface Room {
     id: string;
     title: string;
     participants: number; // max capacity
-    status: 'waiting' | 'selecting' | 'debating';
+    status: 'waiting' | 'selecting' | 'debating' | 'final_selecting';
     topic?: string;
     selectionEndTime?: number;
     debateEndTime?: number;
+    finalSelectionEndTime?: number; // 👈 최종 선택 종료 시간
     users: Record<string, { side?: 'A' | 'B'; name: string }>; // userId -> info
 }
 
@@ -96,12 +97,12 @@ export const startDebate = (roomId: string, topic: string) => {
     }
 };
 
-export const startMainDebate = (roomId: string) => {
+export const startMainDebate = (roomId: string, duration: number = 5 * 60 * 1000) => {
     const rooms = readRooms();
     const room = rooms.find((r) => r.id === roomId);
     if (room) {
         room.status = 'debating';
-        room.debateEndTime = Date.now() + 5 * 60 * 1000; // 5분 후 종료
+        room.debateEndTime = Date.now() + duration;
 
         // 미선택자 'A'로 자동 배정
         Object.keys(room.users).forEach((userId) => {
@@ -112,6 +113,39 @@ export const startMainDebate = (roomId: string) => {
 
         writeRooms(rooms);
         return room; // 변경된 방 정보 반환
+    }
+};
+
+export const startFinalSelection = (roomId: string) => {
+    const rooms = readRooms();
+    const room = rooms.find((r) => r.id === roomId);
+    if (room) {
+        room.status = 'final_selecting';
+        room.finalSelectionEndTime = Date.now() + 10000; // 10초 후 종료
+        writeRooms(rooms);
+        return room;
+    }
+};
+
+export const endDebate = (roomId: string) => {
+    const rooms = readRooms();
+    const room = rooms.find((r) => r.id === roomId);
+    if (room) {
+        room.status = 'waiting';
+        delete room.topic;
+        delete room.selectionEndTime;
+        delete room.debateEndTime;
+        delete room.finalSelectionEndTime;
+
+        // (선택 사항) 유저 선택 초기화? 
+        // 일단 유지하거나, 다음 토론을 위해 초기화할 수도 있음.
+        // 여기서는 다음 토론을 위해 초기화
+        Object.keys(room.users).forEach((userId) => {
+            delete room.users[userId].side;
+        });
+
+        writeRooms(rooms);
+        return room;
     }
 };
 

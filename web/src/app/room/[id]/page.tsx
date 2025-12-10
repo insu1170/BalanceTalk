@@ -24,8 +24,8 @@ interface ServerMessagePayload {
   createdAt: string | number;
 }
 
-export default function ChatRoomPage({ params }: { params: { id: string } }) {
-  const roomId = params.id;
+export default function ChatRoomPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id: roomId } = React.use(params);
 
   const user = useContext(UserContext);
   if (!user) {
@@ -41,9 +41,12 @@ export default function ChatRoomPage({ params }: { params: { id: string } }) {
   const [selectedSide, setSelectedSide] = useState<'A' | 'B' | null>(null);
   const [userSides, setUserSides] = useState<Record<string, 'A' | 'B'>>({});
   const [endTime, setEndTime] = useState<number | undefined>(undefined);
-  const [debateEndTime, setDebateEndTime] = useState<number | undefined>(undefined);
+  const [debateEndTime, setDebateEndTime] = useState<number | undefined>(undefined); // 👈 복구
+  const [phase, setPhase] = useState<'selecting' | 'debating' | 'final_selecting' | 'waiting'>('waiting');
 
-  // userSides로부터 userCounts 계산
+  // ... (existing code)
+
+
   const userCounts = useMemo(() => {
     const counts = { A: 0, B: 0 };
     Object.values(userSides).forEach((side) => {
@@ -151,8 +154,9 @@ export default function ChatRoomPage({ params }: { params: { id: string } }) {
       ]);
     });
 
-    s.on("debate_progress", (data: { phase: 'selecting' | 'debating'; topic?: string; endTime: number }) => {
+    s.on("debate_progress", (data: { phase: 'selecting' | 'debating' | 'final_selecting' | 'waiting'; topic?: string; endTime: number }) => {
       console.log("⏳ 토론 진행 상태:", data);
+      setPhase(data.phase);
       if (data.phase === 'selecting') {
         if (data.topic) setTopic(data.topic);
         setEndTime(data.endTime);
@@ -162,6 +166,18 @@ export default function ChatRoomPage({ params }: { params: { id: string } }) {
       } else if (data.phase === 'debating') {
         setOpen(false);
         setDebateEndTime(data.endTime);
+      } else if (data.phase === 'final_selecting') {
+        console.log("📢 Final Selecting Phase Triggered! Opening SubjectBox...");
+        setOpen(true); // 다시 열기
+        setEndTime(data.endTime);
+        setDebateEndTime(undefined); // 타이머 제거
+      } else if (data.phase === 'waiting') {
+        console.log("🛑 Waiting Phase Triggered! Closing SubjectBox...");
+        setOpen(false);
+        setDebateEndTime(undefined);
+        setTopic("주제 미정");
+        setSelectedSide(null);
+        setUserSides({});
       }
     });
 
@@ -258,6 +274,7 @@ export default function ChatRoomPage({ params }: { params: { id: string } }) {
       <SubjectBox
         text={topic}
         state={open}
+        phase={phase} // 👈 phase 전달 추가
         onClose={() => setOpen(false)}
         endTime={endTime}
         userCounts={userCounts}

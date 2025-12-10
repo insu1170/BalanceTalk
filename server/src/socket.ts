@@ -1,6 +1,6 @@
 import { Server as SocketIOServer, Socket } from "socket.io";
 import { Server as HTTPServer } from "http";
-import { joinRoom, startDebate, selectSide, getUserSide } from "./rooms";
+import { joinRoom, startDebate, selectSide, getUserSide, startMainDebate, startFinalSelection, endDebate } from "./rooms";
 
 const webSocket = (server: HTTPServer) => {
     const io = new SocketIOServer(server, {
@@ -63,24 +63,55 @@ const webSocket = (server: HTTPServer) => {
 
             startDebate(data.roomId, data.topic);
 
-            // 1단계: 진영 선택 단계 시작 알림
+            // 1단계: 진영 선택 단계 시작 알림 (10초)
             io.to(data.roomId).emit("debate_progress", {
                 phase: 'selecting',
                 topic: data.topic,
-                endTime: Date.now() + 10000, // 10초
+                endTime: Date.now() + 10000,
             });
 
             // 10초 후 본 토론 시작
             setTimeout(() => {
-                const updatedRoom = require("./rooms").startMainDebate(data.roomId);
+                console.log(`⏰ [Room: ${data.roomId}] 선택 종료 -> 토론 시작`);
+                // 테스트를 위해 10초(10000ms)로 설정
+                const updatedRoom = startMainDebate(data.roomId, 10000);
                 if (updatedRoom) {
                     io.to(data.roomId).emit("debate_progress", {
                         phase: 'debating',
                         endTime: updatedRoom.debateEndTime,
                     });
 
-                    // 자동 배정된 결과도 알려줘야 함 (모든 유저 상태 브로드캐스트)
+                    // 자동 배정된 결과도 알려줘야 함
                     io.to(data.roomId).emit("room_users_update", updatedRoom.users);
+
+                    // 5분(또는 테스트용 짧은 시간) 후 최종 선택 단계 시작
+                    // const DEBATE_DURATION = 5 * 60 * 1000;
+                    const DEBATE_DURATION = 10000; // 👈 테스트를 위해 10초로 단축!
+
+                    setTimeout(() => {
+                        console.log(`⏰ [Room: ${data.roomId}] 토론 종료 -> 최종 선택 시작`);
+                        const finalRoom = startFinalSelection(data.roomId);
+                        if (finalRoom) {
+                            io.to(data.roomId).emit("debate_progress", {
+                                phase: 'final_selecting',
+                                endTime: finalRoom.finalSelectionEndTime,
+                            });
+
+                            // 10초 후 토론 종료 및 초기화
+                            setTimeout(() => {
+                                console.log(`⏰ [Room: ${data.roomId}] 최종 선택 종료 -> 대기 상태로 복귀`);
+                                const resetRoom = endDebate(data.roomId);
+                                if (resetRoom) {
+                                    io.to(data.roomId).emit("debate_progress", {
+                                        phase: 'waiting',
+                                        endTime: 0,
+                                    });
+                                    // 유저 상태 초기화 알림
+                                    io.to(data.roomId).emit("room_users_update", resetRoom.users);
+                                }
+                            }, 10000);
+                        }
+                    }, DEBATE_DURATION);
                 }
             }, 10000);
         });
