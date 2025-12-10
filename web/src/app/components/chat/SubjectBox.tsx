@@ -7,7 +7,40 @@ type SubjectBoxProps = {
     onClose?: () => void;
 };
 
-export default function SubjectBox({ text, state, onClose, onSelectSide }: SubjectBoxProps & { onSelectSide?: (side: 'A' | 'B') => void }) {
+export default function SubjectBox({
+    text,
+    state,
+    onClose,
+    onSelectSide,
+    endTime,
+    userCounts = { A: 0, B: 0 },
+    mySelection
+}: SubjectBoxProps & {
+    onSelectSide?: (side: 'A' | 'B') => void;
+    endTime?: number;
+    userCounts?: { A: number; B: number };
+    mySelection?: 'A' | 'B' | null;
+}) {
+    const [timeLeft, setTimeLeft] = useState(10);
+
+    // 타이머 로직
+    React.useEffect(() => {
+        if (!endTime) return;
+
+        const interval = setInterval(() => {
+            const now = Date.now();
+            const diff = Math.ceil((endTime - now) / 1000);
+            if (diff <= 0) {
+                setTimeLeft(0);
+                clearInterval(interval);
+            } else {
+                setTimeLeft(diff);
+            }
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [endTime]);
+
     if (!state) return null;
 
     const sides = text.split(/vs/i).map(s => s.trim());
@@ -23,16 +56,15 @@ export default function SubjectBox({ text, state, onClose, onSelectSide }: Subje
                         <div className="flex items-center gap-2 overflow-hidden">
                             <span className="text-xl">📢</span>
                             <p className="text-lg truncate">
-                                <strong className="mr-2 opacity-70">오늘의 주제:</strong>
+                                <strong className="mr-2 opacity-70">진영 선택:</strong>
                                 <span className="font-bold text-amber-950">{text}</span>
                             </p>
                         </div>
-                        <button
-                            onClick={onClose}
-                            className="text-xs rounded-full px-3 py-1 border border-amber-200 hover:bg-amber-100 text-amber-700 transition-colors"
-                        >
-                            닫기
-                        </button>
+                        {timeLeft > 0 && (
+                            <div className="text-2xl font-bold text-red-500 animate-pulse">
+                                {timeLeft}초
+                            </div>
+                        )}
                     </div>
 
                     {/* Selection Buttons */}
@@ -40,20 +72,34 @@ export default function SubjectBox({ text, state, onClose, onSelectSide }: Subje
                         <div className="grid grid-cols-2 gap-4 mt-1">
                             <button
                                 onClick={() => onSelectSide('A')}
-                                className="flex flex-col items-center justify-center gap-1 p-4 rounded-xl border-2 border-amber-200 bg-white/50 hover:bg-amber-100 hover:border-amber-400 transition-all active:scale-95 group"
+                                className={`flex flex-col items-center justify-center gap-1 p-4 rounded-xl border-2 transition-all active:scale-95 group relative
+                                    ${mySelection === 'A' ? 'bg-amber-100 border-amber-500 ring-2 ring-amber-300' : 'bg-white/50 border-amber-200 hover:bg-amber-50'}
+                                `}
                             >
                                 <span className="text-xs font-bold text-amber-600 uppercase tracking-wider">Option A</span>
                                 <span className="text-lg font-bold text-gray-900 group-hover:text-amber-800">{sideA}</span>
+                                <div className="mt-2 flex items-center gap-1 text-sm text-gray-500">
+                                    👥 {userCounts.A}명 선택
+                                </div>
                             </button>
                             <button
                                 onClick={() => onSelectSide('B')}
-                                className="flex flex-col items-center justify-center gap-1 p-4 rounded-xl border-2 border-amber-200 bg-white/50 hover:bg-amber-100 hover:border-amber-400 transition-all active:scale-95 group"
+                                className={`flex flex-col items-center justify-center gap-1 p-4 rounded-xl border-2 transition-all active:scale-95 group relative
+                                    ${mySelection === 'B' ? 'bg-blue-100 border-blue-500 ring-2 ring-blue-300' : 'bg-white/50 border-amber-200 hover:bg-blue-50'}
+                                `}
                             >
-                                <span className="text-xs font-bold text-amber-600 uppercase tracking-wider">Option B</span>
-                                <span className="text-lg font-bold text-gray-900 group-hover:text-amber-800">{sideB}</span>
+                                <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">Option B</span>
+                                <span className="text-lg font-bold text-gray-900 group-hover:text-blue-800">{sideB}</span>
+                                <div className="mt-2 flex items-center gap-1 text-sm text-gray-500">
+                                    👥 {userCounts.B}명 선택
+                                </div>
                             </button>
                         </div>
                     )}
+
+                    <p className="text-center text-xs text-gray-400">
+                        {mySelection ? "선택 완료! 잠시만 기다려주세요..." : "10초 내에 선택하지 않으면 A로 자동 배정됩니다."}
+                    </p>
                 </div>
             </div>
         </div>

@@ -2,7 +2,21 @@
   {
     "id": "1764526339844",
     "title": "asd",
-    "participants": 4
+    "participants": 4,
+    "users": {
+      "user-1464": {
+        "name": "사용자 1464",
+        "side": "B"
+      },
+      "user-5762": {
+        "name": "사용자 5762",
+        "side": "A"
+      }
+    },
+    "status": "debating",
+    "topic": "겨울엔 아이스 vs 뜨아",
+    "selectionEndTime": 1765343832645,
+    "debateEndTime": 1765344132646
   },
   {
     "id": "1764526428773",
@@ -11,15 +25,17 @@
     "users": {
       "user-1464": {
         "name": "사용자 1464",
-        "side": "A"
+        "side": "B"
       },
       "user-5762": {
         "name": "사용자 5762",
-        "side": "B"
+        "side": "A"
       }
     },
     "status": "debating",
-    "topic": "따뜻해진 냉면 vs 식어버린 라면"
+    "topic": "따뜻해진 냉면 vs 식어버린 라면",
+    "selectionEndTime": 1765343765387,
+    "debateEndTime": 1765344065399
   },
   {
     "id": "1764526853425",

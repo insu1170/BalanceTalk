@@ -8,6 +8,7 @@ export type RoomHeaderProps = {
     className?: string;
     onStart?: () => void; // 콜백 추가
     userSide?: 'A' | 'B' | null; // 👈 진영 정보 추가
+    debateEndTime?: number; // 👈 토론 종료 시간 추가
 };
 
 export default function RoomHeader({
@@ -17,7 +18,33 @@ export default function RoomHeader({
     className,
     onStart,
     userSide,
+    debateEndTime,
 }: RoomHeaderProps) {
+    const [timeLeft, setTimeLeft] = React.useState<string | null>(null);
+
+    React.useEffect(() => {
+        if (!debateEndTime) {
+            setTimeLeft(null);
+            return;
+        }
+
+        const interval = setInterval(() => {
+            const now = Date.now();
+            const diff = Math.ceil((debateEndTime - now) / 1000);
+
+            if (diff <= 0) {
+                setTimeLeft("00:00");
+                clearInterval(interval);
+            } else {
+                const min = Math.floor(diff / 60);
+                const sec = diff % 60;
+                setTimeLeft(`${min}:${sec.toString().padStart(2, '0')}`);
+            }
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [debateEndTime]);
+
     return (
         <header className={`sticky top-0 z-10 border-b bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 ${className ?? ""}`}>
             <div className="mx-auto max-w-4xl px-4 py-3 flex items-center gap-3">
@@ -50,12 +77,20 @@ export default function RoomHeader({
                             : ""}
                     </div>
                 </div>
-                <button
-                    onClick={onStart}
-                    className="bg-red-500 hover:bg-red-600 text-white font-semibold px-5 py-2 rounded-xl transition-colors duration-200 cursor-pointer"
-                >
-                    토론 시작
-                </button>
+
+                {/* 타이머 또는 시작 버튼 */}
+                {timeLeft ? (
+                    <div className="bg-gray-900 text-white font-mono font-bold px-4 py-2 rounded-xl text-lg min-w-[80px] text-center">
+                        {timeLeft}
+                    </div>
+                ) : (
+                    <button
+                        onClick={onStart}
+                        className="bg-red-500 hover:bg-red-600 text-white font-semibold px-5 py-2 rounded-xl transition-colors duration-200 cursor-pointer"
+                    >
+                        토론 시작
+                    </button>
+                )}
             </div>
         </header>
     );

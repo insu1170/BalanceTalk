@@ -52,7 +52,7 @@ const webSocket = (server: HTTPServer) => {
                 userId: data.userId,
                 name: data.name,
                 text: data.text,
-                side: side, // 👈 진영 정보 추가
+                side: side,
                 createdAt: Date.now(),
             });
         });
@@ -63,9 +63,26 @@ const webSocket = (server: HTTPServer) => {
 
             startDebate(data.roomId, data.topic);
 
-            io.to(data.roomId).emit("start_debate", {
+            // 1단계: 진영 선택 단계 시작 알림
+            io.to(data.roomId).emit("debate_progress", {
+                phase: 'selecting',
                 topic: data.topic,
+                endTime: Date.now() + 10000, // 10초
             });
+
+            // 10초 후 본 토론 시작
+            setTimeout(() => {
+                const updatedRoom = require("./rooms").startMainDebate(data.roomId);
+                if (updatedRoom) {
+                    io.to(data.roomId).emit("debate_progress", {
+                        phase: 'debating',
+                        endTime: updatedRoom.debateEndTime,
+                    });
+
+                    // 자동 배정된 결과도 알려줘야 함 (모든 유저 상태 브로드캐스트)
+                    io.to(data.roomId).emit("room_users_update", updatedRoom.users);
+                }
+            }, 10000);
         });
 
         // 4) 진영 선택 처리
@@ -74,8 +91,11 @@ const webSocket = (server: HTTPServer) => {
 
             const success = selectSide(data.roomId, data.userId, data.side);
             if (success) {
-                // 나에게는 확정 알림 (필요 시)
-                // 방 전체에는 알릴 필요가 있나? (채팅 칠 때만 보여주면 됨)
+                // 실시간 선택 현황 브로드캐스트
+                io.to(data.roomId).emit("side_update", {
+                    userId: data.userId,
+                    side: data.side,
+                });
             }
         });
     });

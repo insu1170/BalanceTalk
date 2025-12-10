@@ -7,8 +7,10 @@ export interface Room {
     id: string;
     title: string;
     participants: number; // max capacity
-    status: 'waiting' | 'debating';
+    status: 'waiting' | 'selecting' | 'debating';
     topic?: string;
+    selectionEndTime?: number;
+    debateEndTime?: number;
     users: Record<string, { side?: 'A' | 'B'; name: string }>; // userId -> info
 }
 
@@ -87,9 +89,29 @@ export const startDebate = (roomId: string, topic: string) => {
     const rooms = readRooms();
     const room = rooms.find((r) => r.id === roomId);
     if (room) {
-        room.status = 'debating';
+        room.status = 'selecting';
         room.topic = topic;
+        room.selectionEndTime = Date.now() + 10000; // 10초 후 종료
         writeRooms(rooms);
+    }
+};
+
+export const startMainDebate = (roomId: string) => {
+    const rooms = readRooms();
+    const room = rooms.find((r) => r.id === roomId);
+    if (room) {
+        room.status = 'debating';
+        room.debateEndTime = Date.now() + 5 * 60 * 1000; // 5분 후 종료
+
+        // 미선택자 'A'로 자동 배정
+        Object.keys(room.users).forEach((userId) => {
+            if (!room.users[userId].side) {
+                room.users[userId].side = 'A';
+            }
+        });
+
+        writeRooms(rooms);
+        return room; // 변경된 방 정보 반환
     }
 };
 

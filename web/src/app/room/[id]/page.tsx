@@ -20,7 +20,7 @@ interface ServerMessagePayload {
   userId?: string;
   name?: string;
   text: string;
-  side?: 'A' | 'B'; // 👈 진영 정보 추가
+  side?: 'A' | 'B';
   createdAt: string | number;
 }
 
@@ -39,6 +39,18 @@ export default function ChatRoomPage({ params }: { params: { id: string } }) {
   const [open, setOpen] = useState(false);
   const [topic, setTopic] = useState("주제 미정");
   const [selectedSide, setSelectedSide] = useState<'A' | 'B' | null>(null);
+  const [userSides, setUserSides] = useState<Record<string, 'A' | 'B'>>({});
+  const [endTime, setEndTime] = useState<number | undefined>(undefined);
+  const [debateEndTime, setDebateEndTime] = useState<number | undefined>(undefined);
+
+  // userSides로부터 userCounts 계산
+  const userCounts = useMemo(() => {
+    const counts = { A: 0, B: 0 };
+    Object.values(userSides).forEach((side) => {
+      if (side) counts[side]++;
+    });
+    return counts;
+  }, [userSides]);
 
   const TOPIC: Record<string, string> = {
     "1": "따뜻해진 냉면 vs 식어버린 라면",
@@ -72,7 +84,7 @@ export default function ChatRoomPage({ params }: { params: { id: string } }) {
           userId: m.userId ?? "unknown",
           name: m.name ?? m.user ?? "익명",
           text: m.text,
-          side: m.side, // 👈 진영 정보 매핑
+          side: m.side,
           createdAt:
             typeof m.createdAt === "string"
               ? new Date(m.createdAt).getTime()
@@ -98,28 +110,26 @@ export default function ChatRoomPage({ params }: { params: { id: string } }) {
     setSocket(s);
 
     s.on("connect", () => {
-      // 방 입장 (유저 정보 포함)
       s.emit("join_room", { roomId, userId, name });
     });
 
-    // 🔹 방 상태 복구 (새로고침 시)
-    s.on("room_state", (data: { status: string; topic?: string; mySide?: 'A' | 'B' }) => {
+    s.on("room_state", (data: { status: string; topic?: string; mySide?: 'A' | 'B'; selectionEndTime?: number; debateEndTime?: number }) => {
       console.log("🔄 방 상태 동기화:", data);
-      if (data.status === 'debating' && data.topic) {
-        setTopic(data.topic);
-        // 내가 아직 선택 안했으면 배너 띄우기 (선택했으면 안 띄움)
-        if (!data.mySide) {
-          setOpen(true);
-        }
-      }
-      if (data.mySide) {
-        setSelectedSide(data.mySide);
+      if (data.topic) setTopic(data.topic);
+      if (data.mySide) setSelectedSide(data.mySide);
+
+      if (data.status === 'selecting') {
+        setOpen(true);
+        if (data.selectionEndTime) setEndTime(data.selectionEndTime);
+      } else if (data.status === 'debating') {
+        setOpen(false);
+        if (data.debateEndTime) setDebateEndTime(data.debateEndTime);
       }
     });
 
     s.on("error", (err: { message: string }) => {
       alert(err.message);
-      window.location.href = "/"; // 에러 시 목록으로 이동 (예: 방 꽉참, 이미 시작됨)
+      window.location.href = "/";
     });
 
     s.on("receive_message", (msg: ServerMessagePayload) => {
@@ -132,7 +142,7 @@ export default function ChatRoomPage({ params }: { params: { id: string } }) {
           userId: msg.userId ?? "unknown",
           name: msg.name ?? msg.user ?? "익명",
           text: msg.text,
-          side: msg.side, // 👈 진영 정보 수신
+          side: msg.side,
           createdAt:
             typeof msg.createdAt === "string"
               ? new Date(msg.createdAt).getTime()
@@ -141,11 +151,38 @@ export default function ChatRoomPage({ params }: { params: { id: string } }) {
       ]);
     });
 
-    s.on("start_debate", (data: { topic: string }) => {
-      console.log(`📥 start_debate 이벤트 수신: ${data.topic}`);
-      setTopic(data.topic);
-      setOpen(true);
-      setSelectedSide(null);
+    s.on("debate_progress", (data: { phase: 'selecting' | 'debating'; topic?: string; endTime: number }) => {
+      console.log("⏳ 토론 진행 상태:", data);
+      if (data.phase === 'selecting') {
+        if (data.topic) setTopic(data.topic);
+        setEndTime(data.endTime);
+        setOpen(true);
+        setSelectedSide(null);
+        setUserSides({});
+      } else if (data.phase === 'debating') {
+        setOpen(false);
+        setDebateEndTime(data.endTime);
+      }
+    });
+
+    s.on("side_update", (data: { userId: string; side: 'A' | 'B' }) => {
+      console.log("⚖️ 진영 선택 업데이트:", data);
+      setUserSides((prev) => ({
+        ...prev,
+        [data.userId]: data.side,
+      }));
+    });
+
+    s.on("room_users_update", (users: Record<string, { side?: 'A' | 'B' }>) => {
+      const newSides: Record<string, 'A' | 'B'> = {};
+      Object.entries(users).forEach(([uid, u]) => {
+        if (u.side) newSides[uid] = u.side;
+      });
+      setUserSides(newSides);
+
+      if (users[userId]?.side) {
+        setSelectedSide(users[userId].side);
+      }
     });
 
     return () => {
@@ -184,7 +221,7 @@ export default function ChatRoomPage({ params }: { params: { id: string } }) {
         userId: saved.userId ?? userId,
         name: saved.name ?? saved.user ?? name,
         text: saved.text,
-        side: selectedSide ?? undefined, // 👈 내 진영 정보 추가 (로컬 표시용)
+        side: selectedSide ?? undefined,
         createdAt:
           typeof saved.createdAt === "string"
             ? new Date(saved.createdAt).getTime()
@@ -216,16 +253,18 @@ export default function ChatRoomPage({ params }: { params: { id: string } }) {
         participants={3}
         onStart={randomTopic}
         userSide={selectedSide}
+        debateEndTime={debateEndTime}
       />
       <SubjectBox
         text={topic}
         state={open}
         onClose={() => setOpen(false)}
+        endTime={endTime}
+        userCounts={userCounts}
+        mySelection={selectedSide}
         onSelectSide={(side) => {
           setSelectedSide(side);
-          setOpen(false);
           console.log(`진영 선택: ${side}`);
-          // 서버에 진영 선택 정보 전송
           socket?.emit("select_side", { roomId, userId, side });
         }}
       />
