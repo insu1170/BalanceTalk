@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import webSocket from "./socket";
 import fs from "fs";
 import path from "path";
+import { createRoom, getRooms } from "./rooms";
 
 dotenv.config();
 
@@ -18,7 +19,6 @@ webSocket(server);
 // -----------------------------
 // 📌 기본 경로 설정
 // -----------------------------
-const ROOMS_FILE = path.join(process.cwd(), "rooms", "room.json");
 const LOGS_DIR = path.join(process.cwd(), "logs");
 
 // logs 폴더 없으면 생성
@@ -31,25 +31,11 @@ if (!fs.existsSync(LOGS_DIR)) {
 // -----------------------------
 app.post("/api/rooms", (req, res) => {
   const { title, participants } = req.body;
-  const roomId = Date.now().toString();
 
-  const newRoom = { id: roomId, title, participants };
-
-  let rooms = [];
-  if (fs.existsSync(ROOMS_FILE)) {
-    const fileData = fs.readFileSync(ROOMS_FILE, "utf-8");
-    try {
-      rooms = JSON.parse(fileData);
-    } catch {
-      rooms = [];
-    }
-  }
-
-  rooms.push(newRoom);
-  fs.writeFileSync(ROOMS_FILE, JSON.stringify(rooms, null, 2));
+  const newRoom = createRoom(title, participants || 2);
 
   // ⭐️ 채팅 로그 파일 생성
-  const logFilePath = path.join(LOGS_DIR, `${roomId}.json`);
+  const logFilePath = path.join(LOGS_DIR, `${newRoom.id}.json`);
   fs.writeFileSync(logFilePath, JSON.stringify([], null, 2));
 
   res.json({ message: "방 생성 완료", room: newRoom });
@@ -59,15 +45,8 @@ app.post("/api/rooms", (req, res) => {
 // 📌 방 목록 조회
 // -----------------------------
 app.get("/api/rooms", (req, res) => {
-  if (!fs.existsSync(ROOMS_FILE)) return res.json([]);
-
-  try {
-    const fileData = fs.readFileSync(ROOMS_FILE, "utf-8");
-    const rooms = JSON.parse(fileData);
-    res.json(rooms);
-  } catch {
-    res.status(500).json({ message: "방 목록 읽기 실패" });
-  }
+  const rooms = getRooms();
+  res.json(rooms);
 });
 
 // -----------------------------

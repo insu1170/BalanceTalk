@@ -7,6 +7,7 @@ export type Message = {
     userId: string;
     name: string;
     text: string;
+    side?: 'A' | 'B'; // 👈 진영 정보 추가
     createdAt: number; // epoch ms
 };
 
@@ -47,7 +48,14 @@ export default function MessageList({ meId, messages, className }: MessageListPr
                     return (
                         <li key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
                             <div className={`max-w-[80%] ${mine ? "items-end text-right" : "items-start"} flex flex-col gap-1`}>
-                                <div className={`text-xs ${mine ? "text-gray-500" : "text-gray-600"}`}>{mine ? "나" : m.name}</div>
+                                <div className={`text-xs flex items-center gap-1 ${mine ? "text-gray-500 flex-row-reverse" : "text-gray-600"}`}>
+                                    <span>{mine ? "나" : m.name}</span>
+                                    {m.side && (
+                                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${m.side === 'A' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
+                                            {m.side}
+                                        </span>
+                                    )}
+                                </div>
                                 <div className={`rounded-2xl px-3 py-2 leading-relaxed shadow-sm ${mine ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-900"}`}>
                                     {m.text}
                                 </div>

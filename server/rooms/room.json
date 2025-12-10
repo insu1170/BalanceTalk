@@ -7,11 +7,38 @@
   {
     "id": "1764526428773",
     "title": "a",
-    "participants": 4
+    "participants": 4,
+    "users": {
+      "user-1464": {
+        "name": "사용자 1464",
+        "side": "A"
+      },
+      "user-5762": {
+        "name": "사용자 5762",
+        "side": "B"
+      }
+    },
+    "status": "debating",
+    "topic": "따뜻해진 냉면 vs 식어버린 라면"
   },
   {
     "id": "1764526853425",
     "title": "test2",
-    "participants": 6
+    "participants": 6,
+    "status": "debating",
+    "topic": "아침 샤워 vs 밤 샤워"
+  },
+  {
+    "id": "1765333706719",
+    "title": "TEST3",
+    "participants": 4,
+    "status": "debating",
+    "users": {
+      "user-5762": {
+        "name": "사용자 5762",
+        "side": "B"
+      }
+    },
+    "topic": "따뜻해진 냉면 vs 식어버린 라면"
   }
 ]

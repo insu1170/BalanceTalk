@@ -7,6 +7,7 @@ export type RoomHeaderProps = {
     participants?: number;
     className?: string;
     onStart?: () => void; // 콜백 추가
+    userSide?: 'A' | 'B' | null; // 👈 진영 정보 추가
 };
 
 export default function RoomHeader({
@@ -15,6 +16,7 @@ export default function RoomHeader({
     participants,
     className,
     onStart,
+    userSide,
 }: RoomHeaderProps) {
     return (
         <header className={`sticky top-0 z-10 border-b bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 ${className ?? ""}`}>
@@ -35,6 +37,11 @@ export default function RoomHeader({
                             </span>
                             live
                         </span>
+                        {userSide && (
+                            <span className={`ml-2 px-2 py-0.5 rounded text-xs font-bold ${userSide === 'A' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
+                                {userSide} 진영
+                            </span>
+                        )}
                     </div>
                     <div className="text-xs text-gray-500 truncate">
                         Room ID: {roomId}

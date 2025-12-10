@@ -1,0 +1,110 @@
+import fs from "fs";
+import path from "path";
+
+const ROOMS_FILE = path.join(process.cwd(), "rooms", "room.json");
+
+export interface Room {
+    id: string;
+    title: string;
+    participants: number; // max capacity
+    status: 'waiting' | 'debating';
+    topic?: string;
+    users: Record<string, { side?: 'A' | 'B'; name: string }>; // userId -> info
+}
+
+// Helper to read rooms
+const readRooms = (): Room[] => {
+    if (!fs.existsSync(ROOMS_FILE)) return [];
+    try {
+        return JSON.parse(fs.readFileSync(ROOMS_FILE, "utf-8"));
+    } catch {
+        return [];
+    }
+};
+
+// Helper to write rooms
+const writeRooms = (rooms: Room[]) => {
+    fs.writeFileSync(ROOMS_FILE, JSON.stringify(rooms, null, 2));
+};
+
+export const getRooms = () => readRooms();
+
+export const getRoom = (roomId: string): Room | undefined => {
+    const rooms = readRooms();
+    return rooms.find((r) => r.id === roomId);
+};
+
+export const createRoom = (title: string, participants: number): Room => {
+    const rooms = readRooms();
+    const newRoom: Room = {
+        id: Date.now().toString(),
+        title,
+        participants,
+        status: 'waiting',
+        users: {},
+    };
+    rooms.push(newRoom);
+    writeRooms(rooms);
+    return newRoom;
+};
+
+export const joinRoom = (roomId: string, userId: string, name: string): { success: boolean; message?: string; room?: Room } => {
+    const rooms = readRooms();
+    const roomIndex = rooms.findIndex((r) => r.id === roomId);
+    if (roomIndex === -1) return { success: false, message: "Room not found" };
+
+    const room = rooms[roomIndex];
+
+    // Migration: ensure users object exists
+    if (!room.users) {
+        room.users = {};
+    }
+
+    // If user is already in, just update name (or do nothing)
+    if (room.users[userId]) {
+        room.users[userId].name = name;
+        writeRooms(rooms);
+        return { success: true, room };
+    }
+
+    // Check lock
+    if (room.status === 'debating') {
+        return { success: false, message: "Debate already started" };
+    }
+
+    // Check capacity (simple count check)
+    if (Object.keys(room.users).length >= room.participants) {
+        return { success: false, message: "Room is full" };
+    }
+
+    // Add user
+    room.users[userId] = { name };
+    writeRooms(rooms);
+    return { success: true, room };
+};
+
+export const startDebate = (roomId: string, topic: string) => {
+    const rooms = readRooms();
+    const room = rooms.find((r) => r.id === roomId);
+    if (room) {
+        room.status = 'debating';
+        room.topic = topic;
+        writeRooms(rooms);
+    }
+};
+
+export const selectSide = (roomId: string, userId: string, side: 'A' | 'B') => {
+    const rooms = readRooms();
+    const room = rooms.find((r) => r.id === roomId);
+    if (room && room.users[userId]) {
+        room.users[userId].side = side;
+        writeRooms(rooms);
+        return true;
+    }
+    return false;
+};
+
+export const getUserSide = (roomId: string, userId: string): 'A' | 'B' | undefined => {
+    const room = getRoom(roomId);
+    return room?.users[userId]?.side;
+}

@@ -12,7 +12,7 @@ import MessageList, { Message } from "@/app/components/chat/MessageList";
 import ChatBox from "@/app/components/chat/ChatBox";
 import SubjectBox from "@/app/components/chat/SubjectBox";
 import { io, Socket } from "socket.io-client";
-import { UserContext } from "@/app/components/appShell"; // 파일 경로는 실제 구조에 맞게
+import { UserContext } from "@/app/components/appShell";
 
 interface ServerMessagePayload {
   id: string;
@@ -20,17 +20,16 @@ interface ServerMessagePayload {
   userId?: string;
   name?: string;
   text: string;
+  side?: 'A' | 'B'; // 👈 진영 정보 추가
   createdAt: string | number;
 }
 
 export default function ChatRoomPage({ params }: { params: { id: string } }) {
   const roomId = params.id;
 
-  // 🔹 전역 유저 정보 (AppShell에서 제공)
   const user = useContext(UserContext);
   if (!user) {
-    // 아직 AppShell에서 user를 못 만들었을 때 (첫 렌더)
-    return null; // 필요하면 로딩 UI로 바꿔도 됨
+    return null;
   }
 
   const { userId, name } = user;
@@ -39,7 +38,7 @@ export default function ChatRoomPage({ params }: { params: { id: string } }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [open, setOpen] = useState(false);
   const [topic, setTopic] = useState("주제 미정");
-  const [selectedSide, setSelectedSide] = useState<'A' | 'B' | null>(null); // 👈 진영 선택 상태 추가
+  const [selectedSide, setSelectedSide] = useState<'A' | 'B' | null>(null);
 
   const TOPIC: Record<string, string> = {
     "1": "따뜻해진 냉면 vs 식어버린 라면",
@@ -60,9 +59,7 @@ export default function ChatRoomPage({ params }: { params: { id: string } }) {
     }
   };
 
-  // 🔹 초기 로딩 + 소켓 연결
   useEffect(() => {
-    // 1) HTTP로 이전 채팅 로그 불러오기
     const fetchMessages = async () => {
       try {
         const res = await fetch(
@@ -75,6 +72,7 @@ export default function ChatRoomPage({ params }: { params: { id: string } }) {
           userId: m.userId ?? "unknown",
           name: m.name ?? m.user ?? "익명",
           text: m.text,
+          side: m.side, // 👈 진영 정보 매핑
           createdAt:
             typeof m.createdAt === "string"
               ? new Date(m.createdAt).getTime()
@@ -89,7 +87,6 @@ export default function ChatRoomPage({ params }: { params: { id: string } }) {
 
     fetchMessages();
 
-    // 2) 소켓 연결
     const s = io(
       process.env.NEXT_PUBLIC_SOCKET_URL ?? "http://localhost:4000",
       {
@@ -101,13 +98,31 @@ export default function ChatRoomPage({ params }: { params: { id: string } }) {
     setSocket(s);
 
     s.on("connect", () => {
-      // 방 입장
-      s.emit("join_room", roomId);
+      // 방 입장 (유저 정보 포함)
+      s.emit("join_room", { roomId, userId, name });
     });
 
-    // 서버에서 브로드캐스트된 메시지 수신
+    // 🔹 방 상태 복구 (새로고침 시)
+    s.on("room_state", (data: { status: string; topic?: string; mySide?: 'A' | 'B' }) => {
+      console.log("🔄 방 상태 동기화:", data);
+      if (data.status === 'debating' && data.topic) {
+        setTopic(data.topic);
+        // 내가 아직 선택 안했으면 배너 띄우기 (선택했으면 안 띄움)
+        if (!data.mySide) {
+          setOpen(true);
+        }
+      }
+      if (data.mySide) {
+        setSelectedSide(data.mySide);
+      }
+    });
+
+    s.on("error", (err: { message: string }) => {
+      alert(err.message);
+      window.location.href = "/"; // 에러 시 목록으로 이동 (예: 방 꽉참, 이미 시작됨)
+    });
+
     s.on("receive_message", (msg: ServerMessagePayload) => {
-      // 내가 보낸 메시지면 이미 로컬에 추가했으니 스킵
       if (msg.userId && msg.userId === userId) return;
 
       setMessages((prev) => [
@@ -117,6 +132,7 @@ export default function ChatRoomPage({ params }: { params: { id: string } }) {
           userId: msg.userId ?? "unknown",
           name: msg.name ?? msg.user ?? "익명",
           text: msg.text,
+          side: msg.side, // 👈 진영 정보 수신
           createdAt:
             typeof msg.createdAt === "string"
               ? new Date(msg.createdAt).getTime()
@@ -125,26 +141,23 @@ export default function ChatRoomPage({ params }: { params: { id: string } }) {
       ]);
     });
 
-    // 토론 시작 이벤트 수신
     s.on("start_debate", (data: { topic: string }) => {
       console.log(`📥 start_debate 이벤트 수신: ${data.topic}`);
       setTopic(data.topic);
       setOpen(true);
-      setSelectedSide(null); // 새로운 토론 시작 시 선택 초기화
+      setSelectedSide(null);
     });
 
     return () => {
       s.emit("leave_room", roomId);
       s.disconnect();
     };
-  }, [roomId, userId]);
+  }, [roomId, userId, name]);
 
-  // 🔹 메시지 전송 핸들러 (ChatBox → 여기로)
   const handleSend = useCallback(
     async (text: string) => {
       if (!socket) return;
 
-      // 1) 서버에 먼저 저장 (logs/{roomId}.json)
       const res = await fetch(
         `http://localhost:4000/api/rooms/${roomId}/messages`,
         {
@@ -152,7 +165,7 @@ export default function ChatRoomPage({ params }: { params: { id: string } }) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             user: name,
-            userId, // 👈 userId 전송 추가
+            userId,
             text,
           }),
         }
@@ -171,16 +184,15 @@ export default function ChatRoomPage({ params }: { params: { id: string } }) {
         userId: saved.userId ?? userId,
         name: saved.name ?? saved.user ?? name,
         text: saved.text,
+        side: selectedSide ?? undefined, // 👈 내 진영 정보 추가 (로컬 표시용)
         createdAt:
           typeof saved.createdAt === "string"
             ? new Date(saved.createdAt).getTime()
             : saved.createdAt,
       };
 
-      // 2) 내 화면에는 즉시 반영
       setMessages((prev) => [...prev, mapped]);
 
-      // 3) 다른 유저에게 브로드캐스트 (소켓)
       socket.emit("send_message", {
         roomId,
         ...saved,
@@ -188,7 +200,7 @@ export default function ChatRoomPage({ params }: { params: { id: string } }) {
         name: mapped.name,
       });
     },
-    [socket, roomId, userId, name]
+    [socket, roomId, userId, name, selectedSide]
   );
 
   const headerTitle = useMemo(
@@ -203,6 +215,7 @@ export default function ChatRoomPage({ params }: { params: { id: string } }) {
         title={headerTitle}
         participants={3}
         onStart={randomTopic}
+        userSide={selectedSide}
       />
       <SubjectBox
         text={topic}
@@ -210,8 +223,10 @@ export default function ChatRoomPage({ params }: { params: { id: string } }) {
         onClose={() => setOpen(false)}
         onSelectSide={(side) => {
           setSelectedSide(side);
+          setOpen(false);
           console.log(`진영 선택: ${side}`);
-          // TODO: 서버에 진영 선택 정보 전송
+          // 서버에 진영 선택 정보 전송
+          socket?.emit("select_side", { roomId, userId, side });
         }}
       />
       <MessageList
