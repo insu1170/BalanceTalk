@@ -118,17 +118,34 @@ export default function ChatRoomPage({ params }: { params: Promise<{ id: string 
       s.emit("join_room", { roomId, userId, name });
     });
 
-    s.on("room_state", (data: { status: string; topic?: string; mySide?: 'A' | 'B'; selectionEndTime?: number; debateEndTime?: number }) => {
+    s.on("room_state", (data: {
+      status: string;
+      topic?: string;
+      mySide?: 'A' | 'B';
+      selectionEndTime?: number;
+      debateEndTime?: number;
+      finalSelectionEndTime?: number;
+    }) => {
       console.log("🔄 방 상태 동기화:", data);
       if (data.topic) setTopic(data.topic);
       if (data.mySide) setSelectedSide(data.mySide);
 
+      // 상태 복구 로직
       if (data.status === 'selecting') {
+        setPhase('selecting');
         setOpen(true);
         if (data.selectionEndTime) setEndTime(data.selectionEndTime);
       } else if (data.status === 'debating') {
+        setPhase('debating');
         setOpen(false);
         if (data.debateEndTime) setDebateEndTime(data.debateEndTime);
+      } else if (data.status === 'final_selecting') {
+        setPhase('final_selecting');
+        setOpen(true);
+        if (data.finalSelectionEndTime) setEndTime(data.finalSelectionEndTime);
+      } else {
+        setPhase('waiting');
+        setOpen(false);
       }
     });
 

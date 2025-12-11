@@ -3,14 +3,7 @@
     "id": "1764526339844",
     "title": "asd",
     "participants": 4,
-    "users": {
-      "user-1464": {
-        "name": "사용자 1464"
-      },
-      "user-5762": {
-        "name": "사용자 5762"
-      }
-    },
+    "users": {},
     "status": "waiting"
   },
   {
@@ -44,12 +37,27 @@
     "title": "TEST3",
     "participants": 4,
     "status": "debating",
+    "users": {},
+    "topic": "따뜻해진 냉면 vs 식어버린 라면"
+  },
+  {
+    "id": "1765423684725",
+    "title": "tset4",
+    "participants": 4,
+    "status": "selecting",
+    "users": {},
+    "topic": "겨울엔 아이스 vs 뜨아",
+    "selectionEndTime": 1765424075422
+  },
+  {
+    "id": "1765424137320",
+    "title": "asd",
+    "participants": 4,
+    "status": "waiting",
     "users": {
       "user-5762": {
-        "name": "사용자 5762",
-        "side": "B"
+        "name": "사용자 5762"
       }
-    },
-    "topic": "따뜻해진 냉면 vs 식어버린 라면"
+    }
   }
 ]

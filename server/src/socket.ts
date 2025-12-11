@@ -1,6 +1,6 @@
 import { Server as SocketIOServer, Socket } from "socket.io";
 import { Server as HTTPServer } from "http";
-import { joinRoom, startDebate, selectSide, getUserSide, startMainDebate, startFinalSelection, endDebate } from "./rooms";
+import { joinRoom, startDebate, selectSide, getUserSide, startMainDebate, startFinalSelection, endDebate, leaveRoom } from "./rooms";
 
 const webSocket = (server: HTTPServer) => {
     const io = new SocketIOServer(server, {
@@ -16,9 +16,15 @@ const webSocket = (server: HTTPServer) => {
     io.on("connection", (socket: Socket) => {
         console.log("✅ 소켓 연결됨:", socket.id);
 
+        let currentRoomId: string | null = null;
+        let currentUserId: string | null = null;
+
         // 1) 방 입장 처리
         socket.on("join_room", (data: { roomId: string; userId: string; name: string }) => {
             const { roomId, userId, name } = data;
+            currentRoomId = roomId;
+            currentUserId = userId;
+
             const result = joinRoom(roomId, userId, name);
 
             if (!result.success) {
@@ -36,6 +42,9 @@ const webSocket = (server: HTTPServer) => {
                     status: room.status,
                     topic: room.topic,
                     mySide: room.users[userId]?.side,
+                    selectionEndTime: room.selectionEndTime,
+                    debateEndTime: room.debateEndTime,
+                    finalSelectionEndTime: room.finalSelectionEndTime,
                 });
 
                 // 👈 입장 시 유저 목록 업데이트 브로드캐스트 추가
@@ -130,6 +139,17 @@ const webSocket = (server: HTTPServer) => {
                     userId: data.userId,
                     side: data.side,
                 });
+            }
+        });
+
+        // 5) 연결 종료 처리
+        socket.on("disconnect", () => {
+            if (currentRoomId && currentUserId) {
+                console.log(`🔌 유저 퇴장: ${currentUserId} from ${currentRoomId}`);
+                const updatedRoom = leaveRoom(currentRoomId, currentUserId);
+                if (updatedRoom) {
+                    io.to(currentRoomId).emit("room_users_update", updatedRoom.users);
+                }
             }
         });
     });

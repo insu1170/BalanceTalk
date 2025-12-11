@@ -164,3 +164,35 @@ export const getUserSide = (roomId: string, userId: string): 'A' | 'B' | undefin
     const room = getRoom(roomId);
     return room?.users[userId]?.side;
 }
+
+export const leaveRoom = (roomId: string, userId: string) => {
+    console.log(`🗑️ leaveRoom called for Room: ${roomId}, User: ${userId}`);
+    const rooms = readRooms();
+    const room = rooms.find((r) => r.id === roomId);
+    if (room) {
+        if (room.users[userId]) {
+            // 대기 상태일 때만 유저 삭제 (토론 중에는 재접속을 위해 유지)
+            if (room.status === 'waiting') {
+                delete room.users[userId];
+                console.log(`✅ User ${userId} removed from room ${roomId}`);
+                writeRooms(rooms);
+                return room;
+            } else {
+                console.log(`🔒 User ${userId} kept in room ${roomId} (Status: ${room.status})`);
+                // 토론 중에는 유저를 삭제하지 않지만, 연결 끊김 상태를 알리기 위해
+                // room_users_update를 보낼 필요가 있을까?
+                // 일단은 삭제하지 않고 room 객체를 반환하지 않음 (변경 사항 없음)
+                // 하지만 클라이언트에서 "접속 종료" 표시를 하려면 뭔가 변경이 필요함.
+                // 현재 요구사항은 "새로고침 시 토론 유지"이므로, 삭제만 안 하면 됨.
+                return null;
+            }
+        } else {
+            console.log(`⚠️ User ${userId} not found in room ${roomId}`);
+        }
+    } else {
+        console.log(`⚠️ Room ${roomId} not found`);
+    }
+    return null;
+};
+
+
