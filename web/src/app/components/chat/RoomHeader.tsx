@@ -91,7 +91,9 @@ export default function RoomHeader({
                 ) : isHost ? (
                     <button
                         onClick={onStart}
-                        className="bg-red-500 hover:bg-red-600 text-white font-semibold px-5 py-2 rounded-xl transition-colors duration-200 cursor-pointer"
+                        disabled={typeof participants === 'number' && participants < 2}
+                        title={typeof participants === 'number' && participants < 2 ? "최소 2명 이상이어야 토론을 시작할 수 있습니다." : "토론 시작"}
+                        className="bg-red-500 hover:bg-red-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold px-5 py-2 rounded-xl transition-colors duration-200 cursor-pointer"
                     >
                         토론 시작
                     </button>

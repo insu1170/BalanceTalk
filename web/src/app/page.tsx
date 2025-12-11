@@ -45,10 +45,10 @@ export default function Home() {
         const data: RawRoom[] = await res.json();
 
         // RawRoom → Room 으로 매핑
-        const mapped: Room[] = data.map((room) => ({
+        const mapped: Room[] = data.map((room: any) => ({
           id: room.id,
           name: room.title,
-          currentParticipants: 1, // TODO: 실제 인원수 반영 필요
+          currentParticipants: room.users ? Object.keys(room.users).length : 0,
           maxParticipants: room.participants,
         }));
 
@@ -79,6 +79,16 @@ export default function Home() {
           ...prev,
         ];
       });
+    });
+
+    socket.on("room_updated", (data: { id: string; currentParticipants: number; maxParticipants: number }) => {
+      setRooms((prev) =>
+        prev.map((room) =>
+          room.id === data.id
+            ? { ...room, currentParticipants: data.currentParticipants, maxParticipants: data.maxParticipants }
+            : room
+        )
+      );
     });
 
     socket.on("room_deleted", (roomId: string) => {

@@ -77,7 +77,7 @@ export const joinRoom = (roomId: string, userId: string, name: string): { succes
 
     // Check capacity (simple count check)
     if (Object.keys(room.users).length >= room.participants) {
-        return { success: false, message: "Room is full" };
+        return { success: false, message: "방이 꽉 찼습니다." };
     }
 
     // Add user

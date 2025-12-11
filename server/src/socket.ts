@@ -27,8 +27,6 @@ export const initSocket = (server: HTTPServer) => {
         // 1) 방 입장 처리
         socket.on("join_room", (data: { roomId: string; userId: string; name: string }) => {
             const { roomId, userId, name } = data;
-            currentRoomId = roomId;
-            currentUserId = userId;
 
             // 재접속 시 기존 타이머 취소
             if (disconnectTimers.has(userId)) {
@@ -43,6 +41,10 @@ export const initSocket = (server: HTTPServer) => {
                 socket.emit("error", { message: result.message });
                 return;
             }
+
+            // 입장 성공 시에만 세션 상태 업데이트
+            currentRoomId = roomId;
+            currentUserId = userId;
 
             socket.join(roomId);
             console.log(`🚪 ${name}(${userId})님이 ${roomId}방에 입장하셨습니다.`);
@@ -64,6 +66,13 @@ export const initSocket = (server: HTTPServer) => {
 
                 // 👈 입장 시 유저 목록 업데이트 브로드캐스트 추가
                 io.to(roomId).emit("room_users_update", { users: room.users, hostId });
+
+                // 📢 방 목록 갱신을 위한 전체 브로드캐스트
+                io.emit("room_updated", {
+                    id: roomId,
+                    currentParticipants: Object.keys(room.users).length,
+                    maxParticipants: room.participants,
+                });
             }
         });
 
@@ -187,6 +196,13 @@ export const initSocket = (server: HTTPServer) => {
                     if (updatedRoom) {
                         const hostId = Object.keys(updatedRoom.users)[0];
                         io.to(currentRoomId!).emit("room_users_update", { users: updatedRoom.users, hostId });
+
+                        // 📢 방 목록 갱신을 위한 전체 브로드캐스트 (퇴장 시)
+                        io.emit("room_updated", {
+                            id: currentRoomId!,
+                            currentParticipants: Object.keys(updatedRoom.users).length,
+                            maxParticipants: updatedRoom.participants,
+                        });
                     } else {
                         // 방이 삭제된 경우 (null 반환)
                         console.log(`🗑️ Room ${currentRoomId} deleted (empty). Broadcasting room_deleted.`);
