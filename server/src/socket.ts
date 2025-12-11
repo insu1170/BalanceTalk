@@ -48,6 +48,8 @@ const webSocket = (server: HTTPServer) => {
             // 현재 방 상태 전송 (토론 주제, 내 진영 등)
             const room = result.room;
             if (room) {
+                const hostId = Object.keys(room.users)[0]; // 첫 번째 유저가 방장
+
                 socket.emit("room_state", {
                     status: room.status,
                     topic: room.topic,
@@ -55,10 +57,11 @@ const webSocket = (server: HTTPServer) => {
                     selectionEndTime: room.selectionEndTime,
                     debateEndTime: room.debateEndTime,
                     finalSelectionEndTime: room.finalSelectionEndTime,
+                    hostId: hostId, // 👈 방장 ID 전송
                 });
 
                 // 👈 입장 시 유저 목록 업데이트 브로드캐스트 추가
-                io.to(roomId).emit("room_users_update", room.users);
+                io.to(roomId).emit("room_users_update", { users: room.users, hostId });
             }
         });
 
@@ -80,8 +83,19 @@ const webSocket = (server: HTTPServer) => {
         });
 
         // 3) 토론 시작 처리
-        socket.on("start_debate", (data: { roomId: string; topic: string }) => {
-            console.log(`📢 [Room: ${data.roomId}] 토론 시작: ${data.topic}`);
+        socket.on("start_debate", (data: { roomId: string; topic: string; userId: string }) => {
+            console.log(`📢 [Room: ${data.roomId}] 토론 시작 요청: ${data.topic} by ${data.userId}`);
+
+            // 방장 권한 확인
+            const room = getRoom(data.roomId);
+            if (!room) return;
+
+            const hostId = Object.keys(room.users)[0];
+            if (hostId !== data.userId) {
+                console.log(`🚫 권한 없음: ${data.userId}는 방장이 아님 (방장: ${hostId})`);
+                socket.emit("error", { message: "방장만 토론을 시작할 수 있습니다." });
+                return;
+            }
 
             startDebate(data.roomId, data.topic);
 
@@ -104,7 +118,8 @@ const webSocket = (server: HTTPServer) => {
                     });
 
                     // 자동 배정된 결과도 알려줘야 함
-                    io.to(data.roomId).emit("room_users_update", updatedRoom.users);
+                    const hostId = Object.keys(updatedRoom.users)[0];
+                    io.to(data.roomId).emit("room_users_update", { users: updatedRoom.users, hostId });
 
                     // 5분(또는 테스트용 짧은 시간) 후 최종 선택 단계 시작
                     // const DEBATE_DURATION = 5 * 60 * 1000;
@@ -129,7 +144,8 @@ const webSocket = (server: HTTPServer) => {
                                         endTime: 0,
                                     });
                                     // 유저 상태 초기화 알림
-                                    io.to(data.roomId).emit("room_users_update", resetRoom.users);
+                                    const hostId = Object.keys(resetRoom.users)[0];
+                                    io.to(data.roomId).emit("room_users_update", { users: resetRoom.users, hostId });
                                 }
                             }, 10000);
                         }
@@ -167,13 +183,14 @@ const webSocket = (server: HTTPServer) => {
                     console.log(`⏰ Disconnect timeout reached for ${currentUserId}. Removing from room.`);
                     const updatedRoom = leaveRoom(currentRoomId!, currentUserId!); // ! checks are safe due to closure
                     if (updatedRoom) {
-                        io.to(currentRoomId!).emit("room_users_update", updatedRoom.users);
+                        const hostId = Object.keys(updatedRoom.users)[0];
+                        io.to(currentRoomId!).emit("room_users_update", { users: updatedRoom.users, hostId });
                     } else {
                         // 방이 삭제된 경우 (null 반환)
                         // 특별히 할 일 없음 (이미 삭제됨)
                     }
                     disconnectTimers.delete(currentUserId!);
-                }, 1000); // 1초
+                }, 2000); // 2초
 
                 disconnectTimers.set(currentUserId, timer);
             }

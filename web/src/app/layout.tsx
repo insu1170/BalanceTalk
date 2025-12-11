@@ -1,6 +1,7 @@
 import "./globals.css";
 import Link from "next/link";
 import AppShell from "./components/appShell";
+import UserStatus from "./components/UserStatus";
 
 export const metadata = {
   title: "밸런스 토론",
@@ -11,32 +12,28 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ko">
       <body className="flex min-h-screen flex-col bg-neutral-50 text-neutral-900">
-
-        {/* NavBar (Server Component 유지) */}
-        <nav className="flex items-center justify-between px-6 py-3 border-b bg-white shadow-sm text-gray-500">
-          <Link href="/" className="text-xl font-semibold">
-            ⚖️ 밸런스 토론
-          </Link>
-          <div className="flex gap-4 text-sm font-medium">
-            <div className="hover:text-blue-600 transition-colors">
-              로그인
-            </div>
-            <Link href="/about" className="hover:text-blue-600 transition-colors">
-              소개
-            </Link>
-          </div>
-        </nav>
-
         <AppShell>
+          {/* NavBar */}
+          <nav className="flex items-center justify-between px-6 py-3 border-b bg-white shadow-sm text-gray-500">
+            <Link href="/" className="text-xl font-semibold">
+              ⚖️ 밸런스 토론
+            </Link>
+            <div className="flex gap-4 text-sm font-medium items-center">
+              <UserStatus />
+              <Link href="/about" className="hover:text-blue-600 transition-colors">
+                소개
+              </Link>
+            </div>
+          </nav>
+
           <main className="flex-1 max-w-4xl mx-auto w-full p-6">
             {children}
           </main>
+
+          <footer className="text-center text-sm text-gray-500 py-6 border-t bg-white">
+            © 2025 Insu Kim. All rights reserved.
+          </footer>
         </AppShell>
-
-        <footer className="text-center text-sm text-gray-500 py-6 border-t bg-white">
-          © 2025 Insu Kim. All rights reserved.
-        </footer>
-
       </body>
     </html>
   );

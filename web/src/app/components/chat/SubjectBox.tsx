@@ -46,7 +46,13 @@ export default function SubjectBox({
 
     if (!state) return null;
 
-    const sides = text.split(/vs/i).map(s => s.trim());
+    // Parse topic format: "Main Topic|Option A vs Option B" or just "Option A vs Option B"
+    const parts = text.split('|');
+    const hasMainTopic = parts.length > 1;
+    const mainTopic = hasMainTopic ? parts[0] : null;
+    const debateStr = hasMainTopic ? parts[1] : parts[0];
+
+    const sides = debateStr.split(/vs/i).map(s => s.trim());
     const sideA = sides[0] || "A";
     const sideB = sides[1] || "B";
 
@@ -59,11 +65,18 @@ export default function SubjectBox({
                     {/* Header Row */}
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 overflow-hidden">
-                            <span className="text-xl">�</span>
-                            <p className="text-lg truncate">
-                                <strong className="mr-2 opacity-70">{title}</strong>
-                                <span className="font-bold text-amber-950">{text}</span>
-                            </p>
+                            <span className="text-xl">📢</span>
+                            <div className="flex flex-col min-w-0">
+                                {mainTopic && (
+                                    <span className="text-xs font-bold text-amber-600 uppercase tracking-wider mb-0.5">
+                                        {mainTopic}
+                                    </span>
+                                )}
+                                <p className="text-lg truncate leading-tight">
+                                    <strong className="mr-2 opacity-70">{title}</strong>
+                                    <span className="font-bold text-amber-950">{debateStr}</span>
+                                </p>
+                            </div>
                         </div>
                         {timeLeft > 0 && (
                             <div className="text-2xl font-bold text-red-500 animate-pulse">

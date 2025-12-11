@@ -6,7 +6,11 @@ type DebateTeamListProps = {
 };
 
 export default function DebateTeamList({ topic, users }: DebateTeamListProps) {
-    const sides = topic.split(/vs/i).map(s => s.trim());
+    // Parse topic format: "Main Topic|Option A vs Option B" or just "Option A vs Option B"
+    const parts = topic.split('|');
+    const debateStr = parts.length > 1 ? parts[1] : parts[0];
+
+    const sides = debateStr.split(/vs/i).map(s => s.trim());
     const sideA = sides[0] || "A";
     const sideB = sides[1] || "B";
 

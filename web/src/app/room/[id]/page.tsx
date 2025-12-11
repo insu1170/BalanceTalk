@@ -12,6 +12,7 @@ import MessageList, { Message } from "@/app/components/chat/MessageList";
 import ChatBox from "@/app/components/chat/ChatBox";
 import SubjectBox from "@/app/components/chat/SubjectBox";
 import DebateTeamList from "@/app/components/chat/DebateTeamList";
+import TopicSelector from "@/app/components/chat/TopicSelector";
 import { io, Socket } from "socket.io-client";
 import { UserContext } from "@/app/components/appShell";
 
@@ -42,12 +43,11 @@ export default function ChatRoomPage({ params }: { params: Promise<{ id: string 
   const [selectedSide, setSelectedSide] = useState<'A' | 'B' | null>(null);
   const [roomUsers, setRoomUsers] = useState<Record<string, { name: string; side?: 'A' | 'B' }>>({});
   const [endTime, setEndTime] = useState<number | undefined>(undefined);
-  const [debateEndTime, setDebateEndTime] = useState<number | undefined>(undefined); // 👈 복구
+  const [debateEndTime, setDebateEndTime] = useState<number | undefined>(undefined);
   const [phase, setPhase] = useState<'selecting' | 'debating' | 'final_selecting' | 'waiting'>('waiting');
-  const [showUserList, setShowUserList] = useState(false); // 👈 유저 리스트 토글 상태
-
-  // ... (existing code)
-
+  const [showUserList, setShowUserList] = useState(false);
+  const [hostId, setHostId] = useState<string | null>(null);
+  const [showTopicSelector, setShowTopicSelector] = useState(false);
 
   const userCounts = useMemo(() => {
     const counts = { A: 0, B: 0 };
@@ -63,18 +63,25 @@ export default function ChatRoomPage({ params }: { params: Promise<{ id: string 
     "3": "아침 샤워 vs 밤 샤워",
   };
 
-  const randomTopic = () => {
-    console.log("🔘 토론 시작 버튼 클릭됨");
-    const topicId = Math.floor(Math.random() * 3) + 1;
-    const newTopic = TOPIC[String(topicId)];
+  const handleStartClick = () => {
+    setShowTopicSelector(true);
+  };
 
+  const handleTopicSelect = (selectedTopic: string) => {
     if (socket) {
-      console.log(`📤 start_debate 이벤트 전송: ${newTopic}`);
-      socket.emit("start_debate", { roomId, topic: newTopic });
+      console.log(`📤 start_debate 이벤트 전송: ${selectedTopic}`);
+      socket.emit("start_debate", { roomId, topic: selectedTopic, userId });
     } else {
       console.error("❌ 소켓이 연결되지 않음");
     }
+    setShowTopicSelector(false);
   };
+
+  const randomTopic = () => {
+    // Deprecated, kept for reference if needed but handleStartClick replaces it
+    handleStartClick();
+  };
+
 
   useEffect(() => {
     const fetchMessages = async () => {
@@ -125,8 +132,10 @@ export default function ChatRoomPage({ params }: { params: Promise<{ id: string 
       selectionEndTime?: number;
       debateEndTime?: number;
       finalSelectionEndTime?: number;
+      hostId?: string;
     }) => {
       console.log("🔄 방 상태 동기화:", data);
+      if (data.hostId) setHostId(data.hostId);
       if (data.topic) setTopic(data.topic);
       if (data.mySide) setSelectedSide(data.mySide);
 
@@ -181,22 +190,20 @@ export default function ChatRoomPage({ params }: { params: Promise<{ id: string 
         setEndTime(data.endTime);
         setOpen(true);
         setSelectedSide(null);
-        // setRoomUsers({});
       } else if (data.phase === 'debating') {
         setOpen(false);
         setDebateEndTime(data.endTime);
       } else if (data.phase === 'final_selecting') {
         console.log("📢 Final Selecting Phase Triggered! Opening SubjectBox...");
-        setOpen(true); // 다시 열기
+        setOpen(true);
         setEndTime(data.endTime);
-        setDebateEndTime(undefined); // 타이머 제거
+        setDebateEndTime(undefined);
       } else if (data.phase === 'waiting') {
         console.log("🛑 Waiting Phase Triggered! Closing SubjectBox...");
         setOpen(false);
         setDebateEndTime(undefined);
         setTopic("주제 미정");
         setSelectedSide(null);
-        // setRoomUsers({});
       }
     });
 
@@ -208,7 +215,16 @@ export default function ChatRoomPage({ params }: { params: Promise<{ id: string 
       }));
     });
 
-    s.on("room_users_update", (users: Record<string, { name: string; side?: 'A' | 'B' }>) => {
+    s.on("room_users_update", (data: { users: Record<string, { name: string; side?: 'A' | 'B' }>; hostId?: string } | Record<string, { name: string; side?: 'A' | 'B' }>) => {
+      let users: Record<string, { name: string; side?: 'A' | 'B' }> = {};
+
+      if ('users' in data) {
+        users = data.users;
+        if (data.hostId) setHostId(data.hostId);
+      } else {
+        users = data;
+      }
+
       console.log("👥 유저 목록 업데이트:", users);
       setRoomUsers(users);
 
@@ -282,14 +298,21 @@ export default function ChatRoomPage({ params }: { params: Promise<{ id: string 
       <RoomHeader
         roomId={roomId}
         title={headerTitle}
-        participants={3}
-        onStart={randomTopic}
+        participants={Object.keys(roomUsers).length}
+        onStart={handleStartClick}
         userSide={selectedSide}
         debateEndTime={debateEndTime}
-        onToggleUserList={() => setShowUserList(prev => !prev)} // 👈 토글 핸들러 전달
+        onToggleUserList={() => setShowUserList(prev => !prev)}
+        isHost={hostId === userId}
       />
 
-      {/* 유저 리스트 드로어 (오른쪽에서 슬라이드) */}
+      <TopicSelector
+        isOpen={showTopicSelector}
+        onClose={() => setShowTopicSelector(false)}
+        onSelect={handleTopicSelect}
+        topics={TOPIC}
+      />
+
       {/* 유저 리스트 드로어 (오른쪽에서 슬라이드) */}
       <div className={`absolute inset-y-0 right-0 w-64 bg-white transform transition-transform duration-300 z-20 ${showUserList ? 'translate-x-0' : 'translate-x-full'}`}>
         <div className="p-4 border-b flex justify-between items-center bg-gray-50">
@@ -325,7 +348,7 @@ export default function ChatRoomPage({ params }: { params: Promise<{ id: string 
       <SubjectBox
         text={topic}
         state={open}
-        phase={phase} // 👈 phase 전달 추가
+        phase={phase}
         onClose={() => setOpen(false)}
         endTime={endTime}
         userCounts={userCounts}

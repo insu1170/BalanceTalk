@@ -11,6 +11,7 @@ export type RoomHeaderProps = {
     userSide?: 'A' | 'B' | null;
     debateEndTime?: number;
     onToggleUserList?: () => void;
+    isHost?: boolean;
 };
 
 export default function RoomHeader({
@@ -22,6 +23,7 @@ export default function RoomHeader({
     userSide,
     debateEndTime,
     onToggleUserList,
+    isHost = false,
 }: RoomHeaderProps) {
     const [timeLeft, setTimeLeft] = React.useState<string | null>(null);
 
@@ -81,19 +83,19 @@ export default function RoomHeader({
                     </div>
                 </div>
 
-                {/* 타이머 또는 시작 버튼 */}
+                {/* 타이머 또는 시작 버튼 (방장만 보임) */}
                 {timeLeft ? (
                     <div className="bg-gray-900 text-white font-mono font-bold px-4 py-2 rounded-xl text-lg min-w-[80px] text-center">
                         {timeLeft}
                     </div>
-                ) : (
+                ) : isHost ? (
                     <button
                         onClick={onStart}
                         className="bg-red-500 hover:bg-red-600 text-white font-semibold px-5 py-2 rounded-xl transition-colors duration-200 cursor-pointer"
                     >
                         토론 시작
                     </button>
-                )}
+                ) : null}
 
                 {/* 메뉴 버튼 */}
                 <button

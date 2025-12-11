@@ -165,6 +165,16 @@ export const getUserSide = (roomId: string, userId: string): 'A' | 'B' | undefin
     return room?.users[userId]?.side;
 }
 
+export const getHostId = (roomId: string): string | undefined => {
+    const room = getRoom(roomId);
+    if (room && room.users) {
+        // 첫 번째 키를 방장으로 간주
+        const userIds = Object.keys(room.users);
+        return userIds.length > 0 ? userIds[0] : undefined;
+    }
+    return undefined;
+};
+
 export const leaveRoom = (roomId: string, userId: string) => {
     console.log(`🗑️ leaveRoom called for Room: ${roomId}, User: ${userId}`);
     const rooms = readRooms();
