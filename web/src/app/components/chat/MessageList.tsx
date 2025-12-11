@@ -1,23 +1,22 @@
 "use client";
-import React, { useEffect, useMemo, useRef } from "react";
 
+import React, { useMemo } from "react";
+import { Virtuoso } from "react-virtuoso";
 
 export type Message = {
     id: string;
     userId: string;
     name: string;
     text: string;
-    side?: 'A' | 'B'; // 👈 진영 정보 추가
+    side?: "A" | "B";
     createdAt: number; // epoch ms
 };
-
 
 export type MessageListProps = {
     meId: string;
     messages: Message[];
     className?: string;
 };
-
 
 function formatTime(ts: number) {
     const d = new Date(ts);
@@ -26,46 +25,64 @@ function formatTime(ts: number) {
     return `${hh}:${mm}`;
 }
 
-
 export default function MessageList({ meId, messages, className }: MessageListProps) {
-    const endRef = useRef<HTMLDivElement | null>(null);
-
-
-    // sort by createdAt ascending just in case
-    const sorted = useMemo(() => [...messages].sort((a, b) => a.createdAt - b.createdAt), [messages]);
-
-
-    useEffect(() => {
-        endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-    }, [sorted.length]);
-
+    // 시간 기준 정렬 (기존과 동일)
+    const sorted = useMemo(
+        () => [...messages].sort((a, b) => a.createdAt - b.createdAt),
+        [messages]
+    );
 
     return (
         <div className={`mx-auto max-w-4xl w-full ${className ?? ""}`}>
-            <ul className="flex flex-col gap-2">
-                {sorted.map((m) => {
+            <Virtuoso
+                data={sorted}
+                // 채팅처럼 항상 아래쪽(최근 메시지)부터 보이게
+                initialTopMostItemIndex={sorted.length - 1}
+                followOutput="auto" // 새 메시지 생기면 자동으로 아래로 스크롤(내려와 있는 상태일 때)
+                itemContent={(index, m) => {
                     const mine = m.userId === meId;
                     return (
-                        <li key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
-                            <div className={`max-w-[80%] ${mine ? "items-end text-right" : "items-start"} flex flex-col gap-1`}>
-                                <div className={`text-xs flex items-center gap-1 ${mine ? "text-gray-500 flex-row-reverse" : "text-gray-600"}`}>
+                        <div
+                            key={m.id}
+                            className={`flex ${mine ? "justify-end" : "justify-start"} py-1`}
+                        >
+                            <div
+                                className={`max-w-[80%] ${mine ? "items-end text-right" : "items-start"
+                                    } flex flex-col gap-1`}
+                            >
+                                <div
+                                    className={`text-xs flex items-center gap-1 ${mine ? "text-gray-500 flex-row-reverse" : "text-gray-600"
+                                        }`}
+                                >
                                     <span>{mine ? "나" : m.name}</span>
                                     {m.side && (
-                                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${m.side === 'A' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
+                                        <span
+                                            className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${m.side === "A"
+                                                ? "bg-amber-100 text-amber-700"
+                                                : "bg-blue-100 text-blue-700"
+                                                }`}
+                                        >
                                             {m.side}
                                         </span>
                                     )}
                                 </div>
-                                <div className={`rounded-2xl px-3 py-2 leading-relaxed shadow-sm ${mine ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-900"}`}>
+                                <div
+                                    className={`rounded-2xl px-3 py-2 leading-relaxed shadow-sm ${mine
+                                        ? "bg-blue-600 text-white"
+                                        : "bg-gray-100 text-gray-900"
+                                        }`}
+                                >
                                     {m.text}
                                 </div>
-                                <div className="text-[10px] text-gray-400">{formatTime(m.createdAt)}</div>
+                                <div className="text-[10px] text-gray-400">
+                                    {formatTime(m.createdAt)}
+                                </div>
                             </div>
-                        </li>
+                        </div>
                     );
-                })}
-                <div ref={endRef} />
-            </ul>
+                }}
+                className="flex flex-col gap-2"
+            />
         </div>
     );
 }
