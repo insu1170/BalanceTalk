@@ -1,1 +1,13 @@
-[]
+[
+  {
+    "id": "1765435429841",
+    "title": "d",
+    "participants": 4,
+    "status": "waiting",
+    "users": {
+      "user-1464": {
+        "name": "사용자 1464"
+      }
+    }
+  }
+]

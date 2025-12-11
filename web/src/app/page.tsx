@@ -1,4 +1,5 @@
 "use client";
+import { io } from "socket.io-client";
 import Link from "next/link";
 import CreateRoom from "./components/CreateRoom";
 import Login from "./components/Login"
@@ -30,7 +31,13 @@ export default function Home() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loginState, setLoginState] = useState(false)
 
-  // 🔹 서버에서 방 목록 가져오기
+  // ...
+
+  // ...
+
+  // ...
+
+  // 🔹 서버에서 방 목록 가져오기 & 소켓 연결
   useEffect(() => {
     const fetchRooms = async () => {
       try {
@@ -41,8 +48,7 @@ export default function Home() {
         const mapped: Room[] = data.map((room) => ({
           id: room.id,
           name: room.title,
-          // 아직은 입장 인원수 로직 없으니까 1명(방장)이라고 가정
-          currentParticipants: 1,
+          currentParticipants: 1, // TODO: 실제 인원수 반영 필요
           maxParticipants: room.participants,
         }));
 
@@ -53,6 +59,35 @@ export default function Home() {
     };
 
     fetchRooms();
+
+    // 🔌 소켓 연결 및 이벤트 리스너 설정
+    const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL ?? "http://localhost:4000", {
+      path: "/socket.io",
+      transports: ["websocket"],
+    });
+
+    socket.on("room_created", (newRoom: RawRoom) => {
+      setRooms((prev) => {
+        if (prev.some((room) => room.id === newRoom.id)) return prev;
+        return [
+          {
+            id: newRoom.id,
+            name: newRoom.title,
+            currentParticipants: 1,
+            maxParticipants: newRoom.participants,
+          },
+          ...prev,
+        ];
+      });
+    });
+
+    socket.on("room_deleted", (roomId: string) => {
+      setRooms((prev) => prev.filter((room) => room.id !== roomId));
+    });
+
+    return () => {
+      socket.disconnect();
+    };
   }, []);
 
   // 🔹 방 생성
@@ -82,7 +117,10 @@ export default function Home() {
       maxParticipants: created.participants,
     };
 
-    setRooms((prev) => [newRoom, ...prev]);
+    setRooms((prev) => {
+      if (prev.some((room) => room.id === newRoom.id)) return prev;
+      return [newRoom, ...prev];
+    });
     setModalState(false);
   };
 

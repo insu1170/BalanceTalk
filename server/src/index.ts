@@ -2,7 +2,7 @@ import express from "express";
 import http from "http";
 import cors from "cors";
 import dotenv from "dotenv";
-import webSocket from "./socket";
+import { initSocket, getIO } from "./socket";
 import fs from "fs";
 import path from "path";
 import { createRoom, getRooms } from "./rooms";
@@ -14,7 +14,7 @@ app.use(express.json());
 app.use(cors());
 
 const server = http.createServer(app);
-webSocket(server);
+initSocket(server);
 
 // -----------------------------
 // 📌 기본 경로 설정
@@ -37,6 +37,9 @@ app.post("/api/rooms", (req, res) => {
   // ⭐️ 채팅 로그 파일 생성
   const logFilePath = path.join(LOGS_DIR, `${newRoom.id}.json`);
   fs.writeFileSync(logFilePath, JSON.stringify([], null, 2));
+
+  // 📢 방 생성 이벤트 브로드캐스트
+  getIO().emit("room_created", newRoom);
 
   res.json({ message: "방 생성 완료", room: newRoom });
 });

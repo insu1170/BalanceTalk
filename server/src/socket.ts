@@ -2,8 +2,10 @@ import { Server as SocketIOServer, Socket } from "socket.io";
 import { Server as HTTPServer } from "http";
 import { joinRoom, startDebate, selectSide, getUserSide, startMainDebate, startFinalSelection, endDebate, leaveRoom, getRoom } from "./rooms";
 
-const webSocket = (server: HTTPServer) => {
-    const io = new SocketIOServer(server, {
+let io: SocketIOServer;
+
+export const initSocket = (server: HTTPServer) => {
+    io = new SocketIOServer(server, {
         path: "/socket.io",
         cors: {
             origin: "http://localhost:3000",
@@ -187,7 +189,8 @@ const webSocket = (server: HTTPServer) => {
                         io.to(currentRoomId!).emit("room_users_update", { users: updatedRoom.users, hostId });
                     } else {
                         // 방이 삭제된 경우 (null 반환)
-                        // 특별히 할 일 없음 (이미 삭제됨)
+                        console.log(`🗑️ Room ${currentRoomId} deleted (empty). Broadcasting room_deleted.`);
+                        io.emit("room_deleted", currentRoomId!);
                     }
                     disconnectTimers.delete(currentUserId!);
                 }, 2000); // 2초
@@ -196,6 +199,13 @@ const webSocket = (server: HTTPServer) => {
             }
         });
     });
+
+    return io;
 };
 
-export default webSocket;
+export const getIO = () => {
+    if (!io) {
+        throw new Error("Socket.io not initialized!");
+    }
+    return io;
+};
