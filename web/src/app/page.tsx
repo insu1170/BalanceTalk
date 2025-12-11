@@ -41,7 +41,7 @@ export default function Home() {
   useEffect(() => {
     const fetchRooms = async () => {
       try {
-        const res = await fetch("http://localhost:4000/api/rooms");
+        const res = await fetch("https://balancetalk.onrender.com/api/rooms");
         const data: RawRoom[] = await res.json();
 
         // RawRoom → Room 으로 매핑
@@ -61,7 +61,7 @@ export default function Home() {
     fetchRooms();
 
     // 🔌 소켓 연결 및 이벤트 리스너 설정
-    const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL ?? "http://localhost:4000", {
+    const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL ?? "https://balancetalk.onrender.com", {
       path: "/socket.io",
       transports: ["websocket"],
     });
@@ -105,7 +105,7 @@ export default function Home() {
     console.log("방 생성 요청:", data);
 
     // ⚠️ 여기 공백 하나 들어가 있던 거 지워야 함!
-    const res = await fetch("http://localhost:4000/api/rooms", {
+    const res = await fetch("https://balancetalk.onrender.com/api/rooms", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),

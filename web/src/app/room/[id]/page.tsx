@@ -87,7 +87,7 @@ export default function ChatRoomPage({ params }: { params: Promise<{ id: string 
     const fetchMessages = async () => {
       try {
         const res = await fetch(
-          `http://localhost:4000/api/rooms/${roomId}/messages`
+          `https://balancetalk.onrender.com/api/rooms/${roomId}/messages`
         );
         const data: ServerMessagePayload[] = await res.json();
 
@@ -112,7 +112,7 @@ export default function ChatRoomPage({ params }: { params: Promise<{ id: string 
     fetchMessages();
 
     const s = io(
-      process.env.NEXT_PUBLIC_SOCKET_URL ?? "http://localhost:4000",
+      process.env.NEXT_PUBLIC_SOCKET_URL ?? "https://balancetalk.onrender.com",
       {
         path: "/socket.io",
         transports: ["websocket"],
@@ -236,7 +236,7 @@ export default function ChatRoomPage({ params }: { params: Promise<{ id: string 
       if (!socket) return;
 
       const res = await fetch(
-        `http://localhost:4000/api/rooms/${roomId}/messages`,
+        `https://balancetalk.onrender.com/api/rooms/${roomId}/messages`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
