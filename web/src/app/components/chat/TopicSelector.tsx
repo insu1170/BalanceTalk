@@ -47,23 +47,27 @@ export default function TopicSelector({
                     <div className="space-y-3">
                         <label className="text-sm font-semibold text-gray-700 block">추천 주제</label>
                         <div className="grid gap-2">
-                            {Object.entries(topics).map(([key, topic]) => (
-                                <button
-                                    key={key}
-                                    onClick={() => {
-                                        setSelectedPreset(key);
-                                        setCustomTopic("");
-                                        setOptionA("");
-                                        setOptionB("");
-                                    }}
-                                    className={`w-full text-left px-4 py-3 rounded-xl border transition-all ${selectedPreset === key
-                                        ? "border-indigo-500 bg-indigo-50 text-indigo-700 ring-2 ring-indigo-200"
-                                        : "border-gray-200 hover:border-indigo-300 hover:bg-gray-50 text-gray-700"
-                                        }`}
-                                >
-                                    {topic}
-                                </button>
-                            ))}
+                            {Object.entries(topics).map(([key, topic]) => {
+                                const [main, options] = topic.includes('|') ? topic.split('|') : [null, topic];
+                                return (
+                                    <button
+                                        key={key}
+                                        onClick={() => {
+                                            setSelectedPreset(key);
+                                            setCustomTopic("");
+                                            setOptionA("");
+                                            setOptionB("");
+                                        }}
+                                        className={`w-full text-left px-4 py-3 rounded-xl border transition-all ${selectedPreset === key
+                                            ? "border-indigo-500 bg-indigo-50 text-indigo-700 ring-2 ring-indigo-200"
+                                            : "border-gray-200 hover:border-indigo-300 hover:bg-gray-50 text-gray-700"
+                                            }`}
+                                    >
+                                        {main && <span className="block text-xs font-bold text-indigo-500 mb-0.5">{main}</span>}
+                                        <span className="block font-medium">{options}</span>
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
 

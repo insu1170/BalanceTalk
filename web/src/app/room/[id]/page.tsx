@@ -58,9 +58,9 @@ export default function ChatRoomPage({ params }: { params: Promise<{ id: string 
   }, [roomUsers]);
 
   const TOPIC: Record<string, string> = {
-    "1": "따뜻해진 냉면 vs 식어버린 라면",
-    "2": "겨울엔 아이스 vs 뜨아",
-    "3": "아침 샤워 vs 밤 샤워",
+    "1": "술 취하면 더 싫은 사람|버럭이(분노 조절 장애) vs 슬픔이(오열 파티)",
+    "2": "배우자가 또 도박해서 5억을 따왔다면?| 이혼한다 vs 용서한다",
+    "3": "더 최악은?|내가 준 선물 당근 vs 내게 줄 선물 당근",
   };
 
   const handleStartClick = () => {
