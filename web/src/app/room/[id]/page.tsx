@@ -274,7 +274,7 @@ export default function ChatRoomPage({ params }: { params: Promise<{ id: string 
 
       {/* 유저 리스트 드로어 (오른쪽에서 슬라이드) */}
       {/* 유저 리스트 드로어 (오른쪽에서 슬라이드) */}
-      <div className={`absolute inset-y-0 right-0 w-64 bg-white shadow-2xl transform transition-transform duration-300 z-20 ${showUserList ? 'translate-x-0' : 'translate-x-full'}`}>
+      <div className={`absolute inset-y-0 right-0 w-64 bg-white transform transition-transform duration-300 z-20 ${showUserList ? 'translate-x-0' : 'translate-x-full'}`}>
         <div className="p-4 border-b flex justify-between items-center bg-gray-50">
           <h3 className="font-bold text-gray-800">참가자 목록</h3>
           <button onClick={() => setShowUserList(false)} className="text-gray-500 hover:text-gray-700">✕</button>
