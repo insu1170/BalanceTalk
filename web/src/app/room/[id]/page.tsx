@@ -215,21 +215,13 @@ export default function ChatRoomPage({ params }: { params: Promise<{ id: string 
       }));
     });
 
-    s.on("room_users_update", (data: { users: Record<string, { name: string; side?: 'A' | 'B' }>; hostId?: string } | Record<string, { name: string; side?: 'A' | 'B' }>) => {
-      let users: Record<string, { name: string; side?: 'A' | 'B' }> = {};
+    s.on("room_users_update", (data: { users: Record<string, { name: string; side?: 'A' | 'B' }>; hostId?: string }) => {
+      console.log("👥 유저 목록 업데이트:", data.users);
+      setRoomUsers(data.users);
+      if (data.hostId) setHostId(data.hostId);
 
-      if ('users' in data) {
-        users = data.users;
-        if (data.hostId) setHostId(data.hostId);
-      } else {
-        users = data;
-      }
-
-      console.log("👥 유저 목록 업데이트:", users);
-      setRoomUsers(users);
-
-      if (users[userId]?.side) {
-        setSelectedSide(users[userId].side);
+      if (data.users[userId]?.side) {
+        setSelectedSide(data.users[userId].side);
       }
     });
 
