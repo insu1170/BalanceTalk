@@ -20,7 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </Link>
             <div className="flex gap-4 text-sm font-medium items-center">
               <UserStatus />
-              <Link href="/about" className="hover:text-blue-600 transition-colors">
+              <Link href="https://github.com/insu1170/BalanceTalk/tree/main" target="_blank" className="hover:text-blue-600 transition-colors">
                 소개
               </Link>
             </div>

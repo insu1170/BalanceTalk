@@ -1,6 +1,7 @@
 "use client";
 import { io } from "socket.io-client";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import CreateRoom from "./components/CreateRoom";
 import Login from "./components/Login"
 import { useEffect, useState } from "react";
@@ -27,6 +28,7 @@ type Room = {
 };
 
 export default function Home() {
+  const router = useRouter();
   const [modalState, setModalState] = useState(false);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loginState, setLoginState] = useState(false)
@@ -132,6 +134,7 @@ export default function Home() {
       return [newRoom, ...prev];
     });
     setModalState(false);
+    router.push(`/room/${created.id}`);
   };
 
   return (
