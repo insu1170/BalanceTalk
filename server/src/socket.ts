@@ -1,6 +1,6 @@
 import { Server as SocketIOServer, Socket } from "socket.io";
 import { Server as HTTPServer } from "http";
-import { joinRoom, startDebate, selectSide, getUserSide, startMainDebate, startFinalSelection, endDebate, leaveRoom } from "./rooms";
+import { joinRoom, startDebate, selectSide, getUserSide, startMainDebate, startFinalSelection, endDebate, leaveRoom, getRoom } from "./rooms";
 
 const webSocket = (server: HTTPServer) => {
     const io = new SocketIOServer(server, {
@@ -13,6 +13,9 @@ const webSocket = (server: HTTPServer) => {
         transports: ["websocket", "polling"],
     });
 
+    // Disconnect timers: userId -> Timeout
+    const disconnectTimers = new Map<string, NodeJS.Timeout>();
+
     io.on("connection", (socket: Socket) => {
         console.log("✅ 소켓 연결됨:", socket.id);
 
@@ -24,6 +27,13 @@ const webSocket = (server: HTTPServer) => {
             const { roomId, userId, name } = data;
             currentRoomId = roomId;
             currentUserId = userId;
+
+            // 재접속 시 기존 타이머 취소
+            if (disconnectTimers.has(userId)) {
+                console.log(`♻️ User ${userId} reconnected, clearing disconnect timer`);
+                clearTimeout(disconnectTimers.get(userId)!);
+                disconnectTimers.delete(userId);
+            }
 
             const result = joinRoom(roomId, userId, name);
 
@@ -145,11 +155,27 @@ const webSocket = (server: HTTPServer) => {
         // 5) 연결 종료 처리
         socket.on("disconnect", () => {
             if (currentRoomId && currentUserId) {
-                console.log(`🔌 유저 퇴장: ${currentUserId} from ${currentRoomId}`);
-                const updatedRoom = leaveRoom(currentRoomId, currentUserId);
-                if (updatedRoom) {
-                    io.to(currentRoomId).emit("room_users_update", updatedRoom.users);
-                }
+                console.log(`🔌 Disconnect detected: ${currentUserId} from ${currentRoomId}`);
+
+                const room = getRoom(currentRoomId);
+                if (!room) return;
+
+                // 모든 상태에서 유예 시간(2초) 부여 (새로고침 지원)
+                console.log(`⏳ User ${currentUserId} disconnected. Scheduling removal in 2s.`);
+
+                const timer = setTimeout(() => {
+                    console.log(`⏰ Disconnect timeout reached for ${currentUserId}. Removing from room.`);
+                    const updatedRoom = leaveRoom(currentRoomId!, currentUserId!); // ! checks are safe due to closure
+                    if (updatedRoom) {
+                        io.to(currentRoomId!).emit("room_users_update", updatedRoom.users);
+                    } else {
+                        // 방이 삭제된 경우 (null 반환)
+                        // 특별히 할 일 없음 (이미 삭제됨)
+                    }
+                    disconnectTimers.delete(currentUserId!);
+                }, 1000); // 1초
+
+                disconnectTimers.set(currentUserId, timer);
             }
         });
     });

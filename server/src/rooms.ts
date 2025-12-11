@@ -171,21 +171,28 @@ export const leaveRoom = (roomId: string, userId: string) => {
     const room = rooms.find((r) => r.id === roomId);
     if (room) {
         if (room.users[userId]) {
-            // 대기 상태일 때만 유저 삭제 (토론 중에는 재접속을 위해 유지)
-            if (room.status === 'waiting') {
-                delete room.users[userId];
-                console.log(`✅ User ${userId} removed from room ${roomId}`);
-                writeRooms(rooms);
-                return room;
-            } else {
-                console.log(`🔒 User ${userId} kept in room ${roomId} (Status: ${room.status})`);
-                // 토론 중에는 유저를 삭제하지 않지만, 연결 끊김 상태를 알리기 위해
-                // room_users_update를 보낼 필요가 있을까?
-                // 일단은 삭제하지 않고 room 객체를 반환하지 않음 (변경 사항 없음)
-                // 하지만 클라이언트에서 "접속 종료" 표시를 하려면 뭔가 변경이 필요함.
-                // 현재 요구사항은 "새로고침 시 토론 유지"이므로, 삭제만 안 하면 됨.
+            delete room.users[userId];
+            console.log(`✅ User ${userId} removed from room ${roomId}`);
+
+            // 방에 남은 유저가 없으면 방 삭제
+            if (Object.keys(room.users).length === 0) {
+                const newRooms = rooms.filter((r) => r.id !== roomId);
+                writeRooms(newRooms);
+                console.log(`🗑️ Room ${roomId} deleted because it's empty`);
+
+                // 채팅 로그 파일 삭제
+                const LOGS_DIR = path.join(process.cwd(), "logs");
+                const logFilePath = path.join(LOGS_DIR, `${roomId}.json`);
+                if (fs.existsSync(logFilePath)) {
+                    fs.unlinkSync(logFilePath);
+                    console.log(`🗑️ Chat log for room ${roomId} deleted`);
+                }
+
                 return null;
             }
+
+            writeRooms(rooms);
+            return room;
         } else {
             console.log(`⚠️ User ${userId} not found in room ${roomId}`);
         }
@@ -194,5 +201,3 @@ export const leaveRoom = (roomId: string, userId: string) => {
     }
     return null;
 };
-
-
