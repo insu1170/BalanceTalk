@@ -37,6 +37,9 @@ const webSocket = (server: HTTPServer) => {
                     topic: room.topic,
                     mySide: room.users[userId]?.side,
                 });
+
+                // 👈 입장 시 유저 목록 업데이트 브로드캐스트 추가
+                io.to(roomId).emit("room_users_update", room.users);
             }
         });
 

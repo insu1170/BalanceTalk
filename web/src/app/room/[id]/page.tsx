@@ -11,6 +11,7 @@ import RoomHeader from "@/app/components/chat/RoomHeader";
 import MessageList, { Message } from "@/app/components/chat/MessageList";
 import ChatBox from "@/app/components/chat/ChatBox";
 import SubjectBox from "@/app/components/chat/SubjectBox";
+import DebateTeamList from "@/app/components/chat/DebateTeamList";
 import { io, Socket } from "socket.io-client";
 import { UserContext } from "@/app/components/appShell";
 
@@ -39,21 +40,22 @@ export default function ChatRoomPage({ params }: { params: Promise<{ id: string 
   const [open, setOpen] = useState(false);
   const [topic, setTopic] = useState("주제 미정");
   const [selectedSide, setSelectedSide] = useState<'A' | 'B' | null>(null);
-  const [userSides, setUserSides] = useState<Record<string, 'A' | 'B'>>({});
+  const [roomUsers, setRoomUsers] = useState<Record<string, { name: string; side?: 'A' | 'B' }>>({});
   const [endTime, setEndTime] = useState<number | undefined>(undefined);
   const [debateEndTime, setDebateEndTime] = useState<number | undefined>(undefined); // 👈 복구
   const [phase, setPhase] = useState<'selecting' | 'debating' | 'final_selecting' | 'waiting'>('waiting');
+  const [showUserList, setShowUserList] = useState(false); // 👈 유저 리스트 토글 상태
 
   // ... (existing code)
 
 
   const userCounts = useMemo(() => {
     const counts = { A: 0, B: 0 };
-    Object.values(userSides).forEach((side) => {
-      if (side) counts[side]++;
+    Object.values(roomUsers).forEach((u) => {
+      if (u.side) counts[u.side]++;
     });
     return counts;
-  }, [userSides]);
+  }, [roomUsers]);
 
   const TOPIC: Record<string, string> = {
     "1": "따뜻해진 냉면 vs 식어버린 라면",
@@ -162,7 +164,7 @@ export default function ChatRoomPage({ params }: { params: Promise<{ id: string 
         setEndTime(data.endTime);
         setOpen(true);
         setSelectedSide(null);
-        setUserSides({});
+        // setRoomUsers({});
       } else if (data.phase === 'debating') {
         setOpen(false);
         setDebateEndTime(data.endTime);
@@ -177,24 +179,21 @@ export default function ChatRoomPage({ params }: { params: Promise<{ id: string 
         setDebateEndTime(undefined);
         setTopic("주제 미정");
         setSelectedSide(null);
-        setUserSides({});
+        // setRoomUsers({});
       }
     });
 
     s.on("side_update", (data: { userId: string; side: 'A' | 'B' }) => {
       console.log("⚖️ 진영 선택 업데이트:", data);
-      setUserSides((prev) => ({
+      setRoomUsers((prev) => ({
         ...prev,
-        [data.userId]: data.side,
+        [data.userId]: { ...prev[data.userId], side: data.side },
       }));
     });
 
-    s.on("room_users_update", (users: Record<string, { side?: 'A' | 'B' }>) => {
-      const newSides: Record<string, 'A' | 'B'> = {};
-      Object.entries(users).forEach(([uid, u]) => {
-        if (u.side) newSides[uid] = u.side;
-      });
-      setUserSides(newSides);
+    s.on("room_users_update", (users: Record<string, { name: string; side?: 'A' | 'B' }>) => {
+      console.log("👥 유저 목록 업데이트:", users);
+      setRoomUsers(users);
 
       if (users[userId]?.side) {
         setSelectedSide(users[userId].side);
@@ -262,7 +261,7 @@ export default function ChatRoomPage({ params }: { params: Promise<{ id: string 
   );
 
   return (
-    <div className="flex h-[80vh] flex-col bg-white">
+    <div className="flex h-[80vh] flex-col bg-white relative overflow-hidden">
       <RoomHeader
         roomId={roomId}
         title={headerTitle}
@@ -270,7 +269,42 @@ export default function ChatRoomPage({ params }: { params: Promise<{ id: string 
         onStart={randomTopic}
         userSide={selectedSide}
         debateEndTime={debateEndTime}
+        onToggleUserList={() => setShowUserList(prev => !prev)} // 👈 토글 핸들러 전달
       />
+
+      {/* 유저 리스트 드로어 (오른쪽에서 슬라이드) */}
+      {/* 유저 리스트 드로어 (오른쪽에서 슬라이드) */}
+      <div className={`absolute inset-y-0 right-0 w-64 bg-white shadow-2xl transform transition-transform duration-300 z-20 ${showUserList ? 'translate-x-0' : 'translate-x-full'}`}>
+        <div className="p-4 border-b flex justify-between items-center bg-gray-50">
+          <h3 className="font-bold text-gray-800">참가자 목록</h3>
+          <button onClick={() => setShowUserList(false)} className="text-gray-500 hover:text-gray-700">✕</button>
+        </div>
+        <div className="h-full overflow-y-auto pb-20">
+          {topic !== "주제 미정" ? (
+            <DebateTeamList topic={topic} users={roomUsers} />
+          ) : (
+            <div className="p-4">
+              <h4 className="text-sm font-bold text-gray-500 mb-2">대기 중인 참가자 ({Object.keys(roomUsers).length}명)</h4>
+              <ul className="space-y-2">
+                {Object.values(roomUsers).map((u, i) => (
+                  <li key={i} className="flex items-center gap-2 text-gray-800 bg-gray-50 p-2 rounded-lg">
+                    <span className="w-2 h-2 rounded-full bg-gray-400"></span>
+                    {u.name}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 배경 오버레이 (드로어 열렸을 때) */}
+      {showUserList && (
+        <div
+          className="absolute inset-0 bg-black/20 z-10"
+          onClick={() => setShowUserList(false)}
+        />
+      )}
       <SubjectBox
         text={topic}
         state={open}

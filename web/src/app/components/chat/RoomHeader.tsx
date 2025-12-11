@@ -1,14 +1,16 @@
 "use client";
 import Link from "next/link";
 import React from "react";
+
 export type RoomHeaderProps = {
     roomId: string;
     title?: string;
     participants?: number;
     className?: string;
-    onStart?: () => void; // 콜백 추가
-    userSide?: 'A' | 'B' | null; // 👈 진영 정보 추가
-    debateEndTime?: number; // 👈 토론 종료 시간 추가
+    onStart?: () => void;
+    userSide?: 'A' | 'B' | null;
+    debateEndTime?: number;
+    onToggleUserList?: () => void;
 };
 
 export default function RoomHeader({
@@ -19,6 +21,7 @@ export default function RoomHeader({
     onStart,
     userSide,
     debateEndTime,
+    onToggleUserList,
 }: RoomHeaderProps) {
     const [timeLeft, setTimeLeft] = React.useState<string | null>(null);
 
@@ -91,6 +94,14 @@ export default function RoomHeader({
                         토론 시작
                     </button>
                 )}
+
+                {/* 메뉴 버튼 */}
+                <button
+                    onClick={onToggleUserList}
+                    className="p-2 rounded-xl hover:bg-gray-100 transition-colors"
+                >
+                    <span className="text-xl">☰</span>
+                </button>
             </div>
         </header>
     );
